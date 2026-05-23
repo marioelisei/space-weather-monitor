@@ -1,0 +1,11 @@
+# Logs e arquivos temporários
+*.log
+*.tmp
+*.pyc
+__pycache__/
+.DS_Store
+
+# Arquivos sensíveis
+*.env
+.env*
+secrets.*

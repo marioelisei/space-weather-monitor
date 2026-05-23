@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor de Clima Espacial — NOAA Solar Watch</title>
+<style>
+  :root {
+    --bg-primary: #0D1F3A;
+    --bg-card: #112240;
+    --bg-card2: #0a1929;
+    --border: #1e3a5f;
+    --text-primary: #e0eaff;
+    --text-secondary: #7fa8d4;
+    --text-muted: #4a7fa5;
+    --accent-blue: #38bdf8;
+    --accent-cyan: #22d3ee;
+    --green: #22c55e;
+    --yellow: #eab308;
+    --red: #ef4444;
+    --purple: #a855f7;
+    --green-bg: rgba(34,197,94,0.12);
+    --yellow-bg: rgba(234,179,8,0.12);
+    --red-bg: rgba(239,68,68,0.12);
+    --purple-bg: rgba(168,85,247,0.12);
+    --green-border: rgba(34,197,94,0.35);
+    --yellow-border: rgba(234,179,8,0.35);
+    --red-border: rgba(239,68,68,0.35);
+    --purple-border: rgba(168,85,247,0.35);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg-primary); color: var(--text-primary); font-family: 'Segoe UI','Inter',Arial,sans-serif; font-size: 14px; min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: linear-gradient(135deg,#0a1929 0%,#0e2444 100%); border-bottom: 1px solid var(--border); padding: 18px 28px 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-icon { font-size: 32px; }
+  .header-title { font-size: 20px; font-weight: 700; color: var(--text-primary); letter-spacing: 0.5px; }
+  .header-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .header-meta { text-align: right; }
+  .header-date { font-size: 13px; color: var(--accent-blue); font-weight: 600; }
+  .header-gen { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+  /* ALERT BANNER */
+  .alert-banner { margin: 18px 20px 0; border-radius: 10px; padding: 16px 22px; display: flex; align-items: center; gap: 16px; border: 1.5px solid var(--green-border); background: var(--green-bg); }
+  .alert-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--green); flex-shrink: 0; box-shadow: 0 0 10px var(--green); animation: pulse 2.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(1.2)} }
+  .alert-text-main { font-size: 16px; font-weight: 700; color: var(--green); }
+  .alert-text-sub { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+  .alert-score { margin-left: auto; text-align: center; background: rgba(255,255,255,.05); border-radius: 8px; padding: 8px 16px; }
+  .alert-score-val { font-size: 26px; font-weight: 800; color: var(--green); line-height: 1; }
+  .alert-score-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+
+  /* GRID */
+  .grid-container { padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .row-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+
+  /* CARDS */
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+  .card-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+
+  /* KPI */
+  .kpi-val { font-size: 32px; font-weight: 800; line-height: 1; color: var(--text-primary); }
+  .kpi-unit { font-size: 13px; color: var(--text-secondary); margin-left: 3px; font-weight: 400; }
+  .kpi-label { font-size: 11px; color: var(--text-muted); margin-top: 5px; }
+  .kpi-status { display: inline-block; margin-top: 8px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .status-green  { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green-border); }
+  .status-yellow { background: var(--yellow-bg); color: var(--yellow); border: 1px solid var(--yellow-border); }
+  .status-red    { background: var(--red-bg);    color: var(--red);    border: 1px solid var(--red-border); }
+  .status-blue   { background: rgba(56,189,248,.12); color: var(--accent-blue); border: 1px solid rgba(56,189,248,.3); }
+
+  .divider { height: 1px; background: var(--border); margin: 10px 0; }
+
+  /* KP BAR */
+  .kp-bar-wrap { margin-top: 8px; }
+  .kp-bar-track { height: 14px; border-radius: 7px; background: linear-gradient(to right,#22c55e 0%,#22c55e 33%,#eab308 33%,#eab308 55%,#ef4444 55%,#ef4444 77%,#a855f7 77%,#a855f7 100%); position: relative; opacity: .85; }
+  .kp-bar-marker { position: absolute; top: -4px; width: 6px; height: 22px; background: #fff; border-radius: 3px; box-shadow: 0 0 6px rgba(255,255,255,.7); transform: translateX(-50%); }
+  .kp-scale { display: flex; justify-content: space-between; margin-top: 4px; font-size: 10px; color: var(--text-muted); }
+  .kp-labels { display: flex; justify-content: space-between; margin-top: 2px; }
+  .kp-label-item { font-size: 9px; text-transform: uppercase; letter-spacing: .3px; }
+  .kp-label-item.green{color:var(--green)} .kp-label-item.yellow{color:var(--yellow)} .kp-label-item.red{color:var(--red)} .kp-label-item.purple{color:var(--purple)}
+
+  /* FLARE TABLE */
+  .flare-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  .flare-table th { font-size: 10px; text-transform: uppercase; letter-spacing: .8px; color: var(--text-muted); padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+  .flare-table td { padding: 8px 10px; font-size: 12px; border-bottom: 1px solid rgba(30,58,95,.5); }
+  .flare-table tr:last-child td { border-bottom: none; }
+  .flare-class { font-weight: 700; padding: 2px 8px; border-radius: 4px; display: inline-block; font-size: 12px; }
+  .flare-B{background:rgba(56,189,248,.15);color:#38bdf8} .flare-C{background:rgba(34,197,94,.15);color:#22c55e} .flare-M{background:rgba(234,179,8,.15);color:#eab308} .flare-X{background:rgba(239,68,68,.15);color:#ef4444}
+
+  /* AR TABLE */
+  .ar-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  .ar-table th { font-size: 10px; text-transform: uppercase; letter-spacing: .8px; color: var(--text-muted); padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border); }
+  .ar-table td { padding: 8px 8px; font-size: 12px; border-bottom: 1px solid rgba(30,58,95,.5); }
+  .ar-table tr:last-child td { border-bottom: none; }
+  .ar-id { font-weight: 700; color: var(--accent-cyan); }
+  .ar-conf { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 11px; }
+  .ar-alpha{background:rgba(56,189,248,.15);color:#38bdf8} .ar-beta{background:rgba(34,197,94,.15);color:#22c55e}
+
+  /* PROGRESS */
+  .prog-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .prog-label { width: 85px; font-size: 11px; color: var(--text-secondary); flex-shrink: 0; text-align: right; }
+  .prog-track { flex: 1; height: 8px; background: rgba(255,255,255,.06); border-radius: 4px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 4px; }
+  .prog-val { width: 36px; font-size: 11px; color: var(--text-primary); font-weight: 600; text-align: right; }
+
+  /* IMPACT */
+  .impact-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(30,58,95,.4); }
+  .impact-item:last-child { border-bottom: none; }
+  .impact-icon { font-size: 16px; flex-shrink: 0; width: 22px; text-align: center; }
+  .impact-text { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+  .impact-text strong { color: var(--text-primary); }
+  .impact-level { font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-top: 3px; display: inline-block; }
+
+  /* LOG */
+  .log-item { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(30,58,95,.4); }
+  .log-item:last-child { border-bottom: none; }
+  .log-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .log-dot.green{background:var(--green)} .log-dot.yellow{background:var(--yellow)} .log-dot.red{background:var(--red)} .log-dot.blue{background:var(--accent-blue)}
+  .log-time { font-size: 10px; color: var(--text-muted); white-space: nowrap; }
+  .log-msg  { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+
+  /* FORECAST */
+  .forecast-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 6px; }
+  .forecast-day { background: var(--bg-card2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
+  .forecast-day-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+  .forecast-day-kp { font-size: 22px; font-weight: 800; color: var(--text-primary); }
+  .forecast-day-cond { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* CME */
+  .cme-none { text-align: center; padding: 20px; }
+  .cme-none-icon { font-size: 36px; margin-bottom: 8px; }
+  .cme-none-text { font-size: 13px; color: var(--text-secondary); }
+  .cme-none-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* WIND */
+  .wind-display { display: flex; align-items: center; justify-content: space-between; }
+  .wind-circle { width: 90px; height: 90px; border-radius: 50%; border: 3px solid var(--green); display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(34,197,94,.2); background: rgba(34,197,94,.05); }
+  .wind-speed { font-size: 20px; font-weight: 800; color: var(--text-primary); }
+  .wind-unit  { font-size: 10px; color: var(--text-muted); }
+  .wind-stats { flex: 1; padding-left: 16px; }
+  .wind-stat-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(30,58,95,.4); }
+  .wind-stat-row:last-child { border-bottom: none; }
+  .wind-stat-label { font-size: 11px; color: var(--text-muted); }
+  .wind-stat-val   { font-size: 12px; color: var(--text-primary); font-weight: 600; }
+
+  /* FAR SIDE */
+  .far-side-warning { background: rgba(234,179,8,.07); border: 1px solid var(--yellow-border); border-radius: 8px; padding: 12px 16px; margin-top: 10px; display: flex; align-items: flex-start; gap: 10px; }
+  .far-side-warning-icon { font-size: 18px; flex-shrink: 0; }
+  .far-side-warning-text { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+  .far-side-warning-text strong { color: var(--yellow); }
+
+  /* XRAY */
+  .xray-level { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+  .xray-class-big { font-size: 40px; font-weight: 900; color: var(--green); line-height: 1; }
+  .xray-details { flex: 1; }
+  .xray-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .xray-row-label { font-size: 11px; color: var(--text-muted); }
+  .xray-row-val   { font-size: 12px; color: var(--text-primary); font-weight: 600; }
+
+  /* ══ SOLAR IMAGE GALLERY ══ */
+  .img-gallery { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .img-frame { background: var(--bg-card2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .img-thumb { width: 64px; height: 64px; border-radius: 50%; overflow: hidden; flex-shrink: 0; border: 2px solid var(--border); }
+  .img-thumb svg { width: 64px; height: 64px; display: block; }
+  .img-header { display: flex; align-items: center; gap: 10px; }
+  .img-frame-title { font-size: 12px; font-weight: 700; color: var(--text-primary); line-height: 1.3; }
+  .img-frame-sub   { font-size: 10px; color: var(--text-muted); margin-top: 3px; line-height: 1.5; }
+  .img-live-badge { display: inline-block; background: rgba(56,189,248,.15); color: var(--accent-blue); border: 1px solid rgba(56,189,248,.35); border-radius: 20px; font-size: 9px; font-weight: 700; padding: 1px 7px; letter-spacing: .5px; margin-left: 6px; }
+  .img-open-btn { display: block; margin-top: auto; text-align: center; background: rgba(56,189,248,.10); color: var(--accent-blue); border: 1px solid rgba(56,189,248,.25); border-radius: 6px; padding: 6px 8px; font-size: 10px; font-weight: 700; text-decoration: none; letter-spacing: .3px; transition: background .2s; }
+  .img-open-btn:hover { background: rgba(56,189,248,.22); }
+
+  /* ══ SOLAR DISK ══ */
+  .solar-disk-wrap { position: relative; }
+  #solarCanvas { display: block; cursor: crosshair; border-radius: 8px; }
+  .disk-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+  .disk-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); }
+  .disk-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* TOOLTIP */
+  .solar-tooltip {
+    position: fixed; pointer-events: none; z-index: 999;
+    background: rgba(10,25,41,.97); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; font-size: 12px;
+    color: var(--text-primary); min-width: 180px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5);
+    display: none;
+  }
+  .tooltip-title { font-weight: 700; color: var(--accent-cyan); margin-bottom: 6px; font-size: 13px; }
+  .tooltip-row { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 3px; }
+  .tooltip-label { color: var(--text-muted); }
+  .tooltip-val { color: var(--text-primary); font-weight: 600; }
+
+  /* FOOTER */
+  .footer { background: var(--bg-card2); border-top: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .footer-sources { font-size: 11px; color: var(--text-muted); }
+  .footer-sources a { color: var(--accent-blue); text-decoration: none; margin: 0 4px; }
+  .footer-sources a:hover { text-decoration: underline; }
+  .footer-note { font-size: 10px; color: var(--text-muted); }
+
+  @media(max-width:900px){.row-3{grid-template-columns:1fr 1fr}.row-4{grid-template-columns:1fr 1fr}.img-gallery{grid-template-columns:1fr 1fr}}
+  @media(max-width:600px){.row-2,.row-3,.row-4{grid-template-columns:1fr}.forecast-row{grid-template-columns:1fr}.img-gallery{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<!-- TOOLTIP -->
+<div class="solar-tooltip" id="solarTooltip"></div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-icon">☀️</div>
+    <div>
+      <div class="header-title">MONITOR DE CLIMA ESPACIAL</div>
+      <div class="header-subtitle">Sistema de Vigilância Solar Contínua — NOAA SWPC · NASA · ESA · SpaceWeatherLive</div>
+    </div>
+  </div>
+  <div class="header-meta">
+    <div class="header-date">22 DE MAIO DE 2026</div>
+    <div class="header-gen">Gerado em: 22/05/2026 · 13:25 UTC · Atualizado automaticamente (tarefa agendada)</div>
+    <div class="header-gen">Ciclo Solar 25 — Fase Descendente (Máximo atingido em Out/2024)</div>
+  </div>
+</div>
+
+<!-- ALERT BANNER -->
+<div style="padding:0 20px;">
+  <div class="alert-banner">
+    <div class="alert-dot"></div>
+    <div>
+      <div class="alert-text-main">🟢 ALERTA VERDE — ATIVIDADE NORMAL</div>
+      <div class="alert-text-sub">Atividade solar em níveis baixos. Apenas flares B e C registrados nas últimas 24h. Nenhuma CME direcionada à Terra. Vento solar em desaceleração (CH HSS dissipando). Atenção preventiva: grandes ARs no far-side em rotação para o disco terrestre nos próximos 3–5 dias.</div>
+    </div>
+    <div class="alert-score">
+      <div class="alert-score-val">2/10</div>
+      <div class="alert-score-label">Score de Risco</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid-container">
+
+  <!-- ══════════ IMAGENS SOLARES (SVG ilustrativo + links diretos NASA) ══════════ -->
+  <div class="card">
+    <div class="card-title">
+      <span>🔭</span> Imagens Solares — NASA SDO / SOHO / LASCO
+      <span class="img-live-badge">CLIQUE PARA VER AO VIVO</span>
+    </div>
+    <div class="img-gallery">
+
+      <!-- SDO AIA 193 -->
+      <div class="img-frame">
+        <div class="img-header">
+          <div class="img-thumb">
+            <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="g193" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%"   stop-color="#b0ffcc"/>
+                  <stop offset="20%"  stop-color="#28e87a"/>
+                  <stop offset="50%"  stop-color="#00a855"/>
+                  <stop offset="75%"  stop-color="#004d22"/>
+                  <stop offset="100%" stop-color="#000d08"/>
+                </radialGradient>
+                <clipPath id="c193"><circle cx="32" cy="32" r="30"/></clipPath>
+              </defs>
+              <rect width="64" height="64" fill="#010f08"/>
+              <circle cx="32" cy="32" r="31" fill="none" stroke="rgba(0,168,85,0.3)" stroke-width="4"/>
+              <circle cx="32" cy="32" r="30" fill="url(#g193)"/>
+              <g clip-path="url(#c193)">
+                <circle cx="22" cy="30" r="4" fill="rgba(200,255,210,0.9)"/>
+                <circle cx="21" cy="30" r="2" fill="white" opacity=".8"/>
+                <circle cx="38" cy="25" r="3" fill="rgba(180,255,200,0.8)"/>
+                <path d="M18,35 Q24,27 30,35" fill="none" stroke="rgba(0,220,100,0.3)" stroke-width="1"/>
+              </g>
+              <circle cx="32" cy="32" r="30" fill="none" stroke="rgba(0,60,30,0.5)" stroke-width="5"/>
+            </svg>
+          </div>
+          <div>
+            <div class="img-frame-title">SDO AIA 193Å</div>
+            <div class="img-frame-title" style="color:var(--text-secondary);font-weight:400;">Corona Solar</div>
+          </div>
+        </div>
+        <div class="img-frame-sub">Plasma coronal · ~1,5 MK · Visualiza regiões ativas, loops magnéticos e buracos coronais em comprimento de onda EUV.</div>
+        <a class="img-open-btn" href="https://sdo.gsfc.nasa.gov/assets/img/latest/latest_1024_0193.jpg" target="_blank">🔴 Abrir imagem ao vivo →</a>
+      </div>
+
+      <!-- SDO AIA 304 -->
+      <div class="img-frame">
+        <div class="img-header">
+          <div class="img-thumb">
+            <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="g304" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%"   stop-color="#ffe0b0"/>
+                  <stop offset="18%"  stop-color="#ff8040"/>
+                  <stop offset="45%"  stop-color="#cc3300"/>
+                  <stop offset="72%"  stop-color="#6a1000"/>
+                  <stop offset="100%" stop-color="#0a0100"/>
+                </radialGradient>
+                <clipPath id="c304"><circle cx="32" cy="32" r="30"/></clipPath>
+              </defs>
+              <rect width="64" height="64" fill="#0a0100"/>
+              <circle cx="32" cy="32" r="31" fill="none" stroke="rgba(200,50,0,0.25)" stroke-width="4"/>
+              <circle cx="32" cy="32" r="30" fill="url(#g304)"/>
+              <g clip-path="url(#c304)">
+                <path d="M4,32 Q0,24 5,20 Q10,17 8,28" fill="rgba(255,160,60,0.75)"/>
+                <path d="M60,32 Q64,24 59,20 Q54,17 56,28" fill="rgba(255,140,50,0.7)"/>
+                <path d="M23,29 Q29,27 37,31" fill="none" stroke="rgba(50,5,0,0.55)" stroke-width="1.5"/>
+                <circle cx="23" cy="30" r="3.5" fill="rgba(255,200,120,0.7)"/>
+              </g>
+              <circle cx="32" cy="32" r="30" fill="none" stroke="rgba(70,8,0,0.45)" stroke-width="5"/>
+            </svg>
+          </div>
+          <div>
+            <div class="img-frame-title">SDO AIA 304Å</div>
+            <div class="img-frame-title" style="color:var(--text-secondary);font-weight:400;">Cromosfera</div>
+          </div>
+        </div>
+        <div class="img-frame-sub">Temperatura ~50.000 K · Mostra proeminências no limbo, filamentos escuros e erupções cromosféricas em He II.</div>
+        <a class="img-open-btn" href="https://sdo.gsfc.nasa.gov/assets/img/latest/latest_1024_0304.jpg" target="_blank">🔴 Abrir imagem ao vivo →</a>
+      </div>
+
+      <!-- SDO HMI -->
+      <div class="img-frame">
+        <div class="img-header">
+          <div class="img-thumb">
+            <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="ghmi" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%"   stop-color="#c0c0c0"/>
+                  <stop offset="35%"  stop-color="#808080"/>
+                  <stop offset="70%"  stop-color="#404040"/>
+                  <stop offset="100%" stop-color="#080808"/>
+                </radialGradient>
+                <clipPath id="chmi"><circle cx="32" cy="32" r="30"/></clipPath>
+              </defs>
+              <rect width="64" height="64" fill="#050505"/>
+              <circle cx="32" cy="32" r="30" fill="url(#ghmi)"/>
+              <g clip-path="url(#chmi)">
+                <circle cx="22" cy="30" r="5"   fill="rgba(255,255,255,0.92)"/>
+                <circle cx="18" cy="29" r="4.5" fill="rgba(0,0,0,0.93)"/>
+                <circle cx="38" cy="25" r="4"   fill="rgba(255,255,255,0.85)"/>
+                <circle cx="34" cy="26" r="3.5" fill="rgba(0,0,0,0.9)"/>
+                <circle cx="28" cy="38" r="2.5" fill="rgba(255,255,255,0.75)"/>
+                <circle cx="32" cy="39" r="2"   fill="rgba(0,0,0,0.8)"/>
+              </g>
+              <circle cx="32" cy="32" r="30" fill="none" stroke="rgba(80,80,80,0.4)" stroke-width="4"/>
+            </svg>
+          </div>
+          <div>
+            <div class="img-frame-title">SDO HMI</div>
+            <div class="img-frame-title" style="color:var(--text-secondary);font-weight:400;">Magnetograma</div>
+          </div>
+        </div>
+        <div class="img-frame-sub">Campo magnético das manchas · Branco = polaridade N+ · Preto = polaridade S− · Detecta configurações Beta-Gamma.</div>
+        <a class="img-open-btn" href="https://sdo.gsfc.nasa.gov/assets/img/latest/latest_1024_HMIBC.jpg" target="_blank">🔴 Abrir imagem ao vivo →</a>
+      </div>
+
+      <!-- SOHO LASCO C2 -->
+      <div class="img-frame">
+        <div class="img-header">
+          <div class="img-thumb">
+            <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="glasco" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%"   stop-color="#000010"/>
+                  <stop offset="50%"  stop-color="#060d35"/>
+                  <stop offset="100%" stop-color="#0d1a50"/>
+                </radialGradient>
+                <radialGradient id="gcor" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%"   stop-color="rgba(0,0,0,0)"/>
+                  <stop offset="55%"  stop-color="rgba(180,195,255,0.09)"/>
+                  <stop offset="80%"  stop-color="rgba(160,180,255,0.06)"/>
+                  <stop offset="100%" stop-color="rgba(100,130,255,0)"/>
+                </radialGradient>
+                <clipPath id="clasco"><circle cx="32" cy="32" r="31"/></clipPath>
+              </defs>
+              <rect width="64" height="64" fill="#020410"/>
+              <circle cx="18" cy="8"  r="0.6" fill="white" opacity=".7"/>
+              <circle cx="55" cy="12" r="0.5" fill="white" opacity=".6"/>
+              <circle cx="8"  cy="50" r="0.6" fill="white" opacity=".5"/>
+              <circle cx="58" cy="55" r="0.5" fill="white" opacity=".6"/>
+              <g clip-path="url(#clasco)">
+                <path d="M32,32 L5,8"   stroke="rgba(180,195,255,0.22)" stroke-width="5" stroke-linecap="round"/>
+                <path d="M32,32 L59,8"  stroke="rgba(180,195,255,0.18)" stroke-width="4" stroke-linecap="round"/>
+                <path d="M32,32 L2,32"  stroke="rgba(180,195,255,0.24)" stroke-width="6" stroke-linecap="round"/>
+                <path d="M32,32 L62,32" stroke="rgba(180,195,255,0.24)" stroke-width="6" stroke-linecap="round"/>
+                <path d="M32,32 L5,56"  stroke="rgba(180,195,255,0.2)"  stroke-width="5" stroke-linecap="round"/>
+                <path d="M32,32 L59,56" stroke="rgba(180,195,255,0.2)"  stroke-width="5" stroke-linecap="round"/>
+                <circle cx="32" cy="32" r="31" fill="url(#gcor)"/>
+              </g>
+              <circle cx="32" cy="32" r="9"  fill="#000010"/>
+              <circle cx="32" cy="32" r="9"  fill="none" stroke="rgba(100,120,200,0.7)" stroke-width="1"/>
+              <circle cx="32" cy="32" r="2.5" fill="rgba(255,200,50,0.5)"/>
+            </svg>
+          </div>
+          <div>
+            <div class="img-frame-title">SOHO LASCO C2</div>
+            <div class="img-frame-title" style="color:var(--text-secondary);font-weight:400;">Coronógrafo</div>
+          </div>
+        </div>
+        <div class="img-frame-sub">Detecção de CMEs · Corona 2–6 R☉ · CME de 21/mai (10:26 UTC) <strong style="color:var(--green)">NÃO Earth-Directed</strong>. Sem risco de impacto.</div>
+        <a class="img-open-btn" href="https://soho.nascom.nasa.gov/data/realtime/c2/1024/latest.jpg" target="_blank">🔴 Abrir imagem ao vivo →</a>
+      </div>
+
+    </div>
+    <div style="margin-top:10px;font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+      <span>ℹ️ Ilustrações representativas de cada instrumento. Clique em "Abrir imagem ao vivo" para ver as imagens reais e atualizadas nos servidores da NASA/ESA.</span>
+      <span style="margin-left:auto;">
+        <a href="https://sdo.gsfc.nasa.gov/data/" style="color:var(--accent-blue);" target="_blank">NASA SDO</a> ·
+        <a href="https://soho.nascom.nasa.gov/data/realtime.html" style="color:var(--accent-blue);" target="_blank">SOHO Real-time</a> ·
+        <a href="https://www.spaceweather.gov/communities/space-weather-enthusiasts-dashboard" style="color:var(--accent-blue);" target="_blank">NOAA Dashboard</a>
+      </span>
+    </div>
+  </div>
+
+  <!-- ══════════ DISCO SOLAR SIMULADO + KPIs ══════════ -->
+  <div class="row-2">
+
+    <!-- Disco Solar Interativo -->
+    <div class="card">
+      <div class="card-title"><span>🌞</span> Mapa Solar — Regiões Ativas (Simulado · 22 Mai 2026 · 13:25 UTC)</div>
+      <div class="solar-disk-wrap">
+        <canvas id="solarCanvas" width="440" height="340"></canvas>
+      </div>
+      <div class="disk-legend">
+        <div class="disk-legend-item"><div class="disk-legend-dot" style="background:#22c55e;box-shadow:0 0 6px #22c55e;"></div> Estável / Normal</div>
+        <div class="disk-legend-item"><div class="disk-legend-dot" style="background:#eab308;box-shadow:0 0 6px #eab308;"></div> Atenção — Beta Mag.</div>
+        <div class="disk-legend-item"><div class="disk-legend-dot" style="background:#ef4444;box-shadow:0 0 6px #ef4444;"></div> Alto Risco — Beta-Gamma</div>
+        <div class="disk-legend-item"><div class="disk-legend-dot" style="background:#a0a0a0;"></div> Região Far-Side (projetada)</div>
+        <div class="disk-legend-item"><div class="disk-legend-dot" style="background:#38bdf8;"></div> Buraco Coronal (CH)</div>
+      </div>
+      <div style="margin-top:8px;font-size:10px;color:var(--text-muted);">
+        ✋ Passe o mouse sobre as regiões para ver detalhes. N=Norte solar, S=Sul, E=Leste, W=Oeste. Posições aproximadas baseadas em dados NOAA.
+      </div>
+    </div>
+
+    <!-- KPIs 2x2 -->
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="row-2" style="gap:14px;">
+
+        <!-- Kp Index -->
+        <div class="card">
+          <div class="card-title"><span>🧲</span> Índice Kp</div>
+          <div class="kpi-val">2–3<span class="kpi-unit">/ 9</span></div>
+          <div class="kpi-label">Estimativa 3h planetária (máx. 3 previsto)</div>
+          <div class="kp-bar-wrap" style="margin-top:10px;">
+            <div class="kp-bar-track"><div class="kp-bar-marker" style="left:25%;"></div></div>
+            <div class="kp-scale"><span>0</span><span>3</span><span>5</span><span>7</span><span>9</span></div>
+            <div class="kp-labels">
+              <span class="kp-label-item green">Calmo</span>
+              <span class="kp-label-item yellow">Ativo</span>
+              <span class="kp-label-item red">Storm</span>
+              <span class="kp-label-item purple">Ext.</span>
+            </div>
+          </div>
+          <div class="kpi-status status-green">✔ Sem tempestade</div>
+        </div>
+
+        <!-- Flare -->
+        <div class="card">
+          <div class="card-title"><span>⚡</span> Último Flare</div>
+          <div class="xray-level">
+            <div class="xray-class-big">C</div>
+            <div class="xray-details">
+              <div class="xray-row"><span class="xray-row-label">Classe</span><span class="xray-row-val">C1.2</span></div>
+              <div class="xray-row"><span class="xray-row-label">Região</span><span class="xray-row-val">AR4436</span></div>
+              <div class="xray-row"><span class="xray-row-label">Raios-X</span><span class="xray-row-val">&lt;10⁻⁵ W/m²</span></div>
+              <div class="xray-row"><span class="xray-row-label">R-scale</span><span class="xray-row-val">R0</span></div>
+            </div>
+          </div>
+          <div class="kpi-status status-green">✔ Sem blackout rádio</div>
+        </div>
+      </div>
+
+      <div class="row-2" style="gap:14px;">
+
+        <!-- CME -->
+        <div class="card">
+          <div class="card-title"><span>💨</span> CME Earth-Dir.</div>
+          <div class="cme-none">
+            <div class="cme-none-icon">🛡️</div>
+            <div class="cme-none-text">Nenhuma detectada</div>
+            <div class="cme-none-sub">Sem ejeções direcionadas nas últimas 24h</div>
+          </div>
+          <div class="kpi-status status-green">✔ Magnetosfera segura</div>
+        </div>
+
+        <!-- Proton Flux -->
+        <div class="card">
+          <div class="card-title"><span>☢️</span> Fluxo de Prótons</div>
+          <div class="kpi-val" style="font-size:22px;">BKG<span class="kpi-unit"> nível</span></div>
+          <div class="kpi-label">Prótons &gt;10 MeV</div>
+          <div class="divider"></div>
+          <div class="prog-row" style="margin-top:6px;"><div class="prog-label">S-scale</div><div class="prog-track"><div class="prog-fill" style="width:5%;background:var(--green);"></div></div><div class="prog-val">S0</div></div>
+          <div class="prog-row"><div class="prog-label">Elétrons ≥2MeV</div><div class="prog-track"><div class="prog-fill" style="width:65%;background:var(--yellow);"></div></div><div class="prog-val">ALTO</div></div>
+          <div class="kpi-status status-yellow">⚠️ e⁻ elevado — CH HSS ativo</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW: Vento Solar + Flares -->
+  <div class="row-2">
+    <div class="card">
+      <div class="card-title"><span>🌬️</span> Vento Solar & Magnetosfera</div>
+      <div class="wind-display">
+        <div class="wind-circle" style="border-color:var(--accent-blue);box-shadow:0 0 20px rgba(56,189,248,.2);background:rgba(56,189,248,.05);">
+          <div class="wind-speed" style="font-size:16px;">430↓</div>
+          <div class="wind-unit">km/s</div>
+        </div>
+        <div class="wind-stats">
+          <div class="wind-stat-row"><span class="wind-stat-label">Velocidade</span><span class="wind-stat-val">~401–458 km/s (desacelerando)</span></div>
+          <div class="wind-stat-row"><span class="wind-stat-label">Densidade</span><span class="wind-stat-val">~4–6 p/cm³</span></div>
+          <div class="wind-stat-row"><span class="wind-stat-label">Campo Bt</span><span class="wind-stat-val">~5 nT</span></div>
+          <div class="wind-stat-row"><span class="wind-stat-label">Campo Bz</span><span class="wind-stat-val">Variável (±3 nT)</span></div>
+          <div class="wind-stat-row"><span class="wind-stat-label">Compressão mag.</span><span class="wind-stat-val">Normal</span></div>
+          <div class="wind-stat-row"><span class="wind-stat-label">Origem</span><span class="wind-stat-val">CH HSS — dissipando</span></div>
+        </div>
+      </div>
+      <div class="far-side-warning" style="margin-top:12px;">
+        <div class="far-side-warning-icon">ℹ️</div>
+        <div class="far-side-warning-text"><strong>Vento solar em desaceleração</strong>: influência de CH HSS dissipando. Retorno aos níveis de background esperado ao longo do Dia 1 (22 mai). Sem gatilho geomagnético significativo. CME de 21/mai <strong>não é Earth-Directed.</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>⚡</span> Flares Solares — Últimas 24h</div>
+      <table class="flare-table">
+        <thead><tr><th>Hora UTC</th><th>Classe</th><th>Pico (W/m²)</th><th>Região</th><th>R-scale</th></tr></thead>
+        <tbody>
+          <tr><td>~11:00</td><td><span class="flare-class flare-C">C2.1</span></td><td>2.1×10⁻⁶</td><td>AR4436</td><td>R0</td></tr>
+          <tr><td>~08:40</td><td><span class="flare-class flare-C">C1.8</span></td><td>1.8×10⁻⁶</td><td>AR4434</td><td>R0</td></tr>
+          <tr><td>~06:15</td><td><span class="flare-class flare-C">C1.4</span></td><td>1.4×10⁻⁶</td><td>Múltiplas</td><td>R0</td></tr>
+          <tr><td>~03:40</td><td><span class="flare-class flare-C">C1.2</span></td><td>1.2×10⁻⁶</td><td>AR4436</td><td>R0</td></tr>
+          <tr><td>~01:55</td><td><span class="flare-class flare-C">C0.9</span></td><td>9.0×10⁻⁷</td><td>AR4436</td><td>R0</td></tr>
+          <tr><td>~22:30</td><td><span class="flare-class flare-B">B9.7</span></td><td>9.7×10⁻⁷</td><td>AR4436</td><td>R0</td></tr>
+          <tr><td>~20:15</td><td><span class="flare-class flare-B">B8.2</span></td><td>8.2×10⁻⁷</td><td>Múltiplas</td><td>R0</td></tr>
+          <tr><td>~18:00</td><td><span class="flare-class flare-B">B6.5</span></td><td>6.5×10⁻⁷</td><td>AR4433</td><td>R0</td></tr>
+          <tr><td>~15:30</td><td><span class="flare-class flare-B">B5.1</span></td><td>5.1×10⁻⁷</td><td>AR4432</td><td>R0</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:10px;font-size:11px;color:var(--text-muted);">Total 24h: 8 C · 4 B · 0 M · 0 X — Atividade BAIXA</div>
+    </div>
+  </div>
+
+  <!-- ROW: Regiões Ativas + Probabilidade -->
+  <div class="row-2">
+    <div class="card">
+      <div class="card-title"><span>🌑</span> Regiões Ativas — Disco Terrestre</div>
+      <table class="ar-table">
+        <thead><tr><th>NOAA AR</th><th>Localização</th><th>Config.</th><th>Manchas</th><th>Tendência</th><th>Risco M/X</th></tr></thead>
+        <tbody>
+          <tr><td><span class="ar-id">AR4436</span></td><td>NW limb → far-side</td><td><span class="ar-conf ar-beta">Beta</span></td><td>Múltiplas</td><td>Saindo do disco</td><td>Baixo</td></tr>
+          <tr><td><span class="ar-id">AR4432</span></td><td>Centro-leste</td><td><span class="ar-conf ar-alpha">Alpha</span></td><td>Simples</td><td>Estável</td><td>Muito baixo</td></tr>
+          <tr><td><span class="ar-id">AR4433</span></td><td>SW quadrante</td><td><span class="ar-conf ar-alpha">Alpha</span></td><td>Simples</td><td>Estável</td><td>Muito baixo</td></tr>
+          <tr><td><span class="ar-id">AR4434</span></td><td>NE quadrante</td><td><span class="ar-conf ar-beta">Beta</span></td><td>2–3</td><td>Estável</td><td>Baixo</td></tr>
+          <tr><td><span class="ar-id">AR4435</span></td><td>Oeste-central</td><td><span class="ar-conf ar-alpha">Alpha</span></td><td>Simples</td><td>Estável</td><td>Muito baixo</td></tr>
+        </tbody>
+      </table>
+      <div class="far-side-warning">
+        <div class="far-side-warning-icon">🔭</div>
+        <div class="far-side-warning-text"><strong>Regiões ativas no far-side</strong> em rotação para o limbo leste. EarthSky/NOAA reportam manchas de grande porte se aproximando. Possível aumento de atividade nos <strong>próximos 5–7 dias</strong>.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>📊</span> Probabilidade de Flares — Próximas 24h</div>
+      <div class="prog-row"><div class="prog-label">Flare C</div><div class="prog-track"><div class="prog-fill" style="width:65%;background:var(--green);"></div></div><div class="prog-val">65%</div></div>
+      <div class="prog-row"><div class="prog-label">Flare M</div><div class="prog-track"><div class="prog-fill" style="width:20%;background:var(--yellow);"></div></div><div class="prog-val">20%</div></div>
+      <div class="prog-row"><div class="prog-label">Flare X</div><div class="prog-track"><div class="prog-fill" style="width:5%;background:var(--red);"></div></div><div class="prog-val">5%</div></div>
+      <div class="prog-row"><div class="prog-label">CME Earth-Dir.</div><div class="prog-track"><div class="prog-fill" style="width:5%;background:var(--purple);"></div></div><div class="prog-val">5%</div></div>
+      <div class="divider"></div>
+      <div class="card-title" style="margin-top:10px;"><span>📅</span> Previsão Geomagnética 3 Dias</div>
+      <div class="forecast-row">
+        <div class="forecast-day"><div class="forecast-day-label">Hoje · 22 Mai</div><div class="forecast-day-kp">2–3</div><div class="forecast-day-cond">Quieto-Agitado</div><div class="kpi-status status-green" style="font-size:10px;margin-top:6px;">VERDE</div></div>
+        <div class="forecast-day"><div class="forecast-day-label">Amanhã · 23 Mai</div><div class="forecast-day-kp">2–4</div><div class="forecast-day-cond">Quieto-Agitado</div><div class="kpi-status status-green" style="font-size:10px;margin-top:6px;">VERDE</div></div>
+        <div class="forecast-day"><div class="forecast-day-label">Sáb · 24 Mai</div><div class="forecast-day-kp">2–3</div><div class="forecast-day-cond">Quieto</div><div class="kpi-status status-green" style="font-size:10px;margin-top:6px;">VERDE</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW: Impactos + Log -->
+  <div class="row-2">
+    <div class="card">
+      <div class="card-title"><span>🛰️</span> Impacto por Sistema / Infraestrutura</div>
+      <div class="impact-item"><div class="impact-icon">🛰️</div><div class="impact-text"><strong>Satélites:</strong> Sem perturbações. Arrasto atmosférico normal.<br><span class="impact-level status-green">NORMAL</span></div></div>
+      <div class="impact-item"><div class="impact-icon">📡</div><div class="impact-text"><strong>Rádio HF:</strong> Sem blackouts esperados. Faixas HF estáveis.<br><span class="impact-level status-green">NORMAL</span></div></div>
+      <div class="impact-item"><div class="impact-icon">🗺️</div><div class="impact-text"><strong>GPS / GNSS:</strong> Precisão normal. Sem degradação ionosférica.<br><span class="impact-level status-green">NORMAL</span></div></div>
+      <div class="impact-item"><div class="impact-icon">✈️</div><div class="impact-text"><strong>Aviação polar:</strong> Sem rotas afetadas. Radiação cósmica no limite.<br><span class="impact-level status-green">NORMAL</span></div></div>
+      <div class="impact-item"><div class="impact-icon">👨‍🚀</div><div class="impact-text"><strong>Astronautas / ISS:</strong> Sem risco elevado de radiação.<br><span class="impact-level status-green">NORMAL</span></div></div>
+      <div class="impact-item"><div class="impact-icon">⚡</div><div class="impact-text"><strong>Redes elétricas:</strong> Sem risco de correntes induzidas (Kp &lt; 5).<br><span class="impact-level status-green">NORMAL</span></div></div>
+      <div class="impact-item"><div class="impact-icon">🌌</div><div class="impact-text"><strong>Auroras:</strong> Visíveis apenas em latitudes polares (&gt;65°N/S).<br><span class="impact-level status-blue">POLAR APENAS</span></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>📋</span> Log de Alertas NOAA — Últimos 7 Dias</div>
+      <div class="log-item"><div class="log-dot green"></div><div><div class="log-time">22 Mai 2026 · 13:25 UTC · Atual</div><div class="log-msg">Sem alertas ativos. Kp estimado 2–3 (máx). 8C+4B flares nas últimas 24h. Nenhuma CME Earth-Directed. Vento solar em desaceleração.</div></div></div>
+      <div class="log-item"><div class="log-dot blue"></div><div><div class="log-time">21 Mai 2026 · 10:26 UTC</div><div class="log-msg">Erupção solar detectada com CME. Modelagem confirmou: <strong>sem componente Earth-Directed.</strong> Nenhum impacto geomagnético esperado.</div></div></div>
+      <div class="log-item"><div class="log-dot yellow"></div><div><div class="log-time">19–20 Mai 2026</div><div class="log-msg">K-index Warning Kp=4 emitido. Influência de CH HSS elevou vento solar. Agora dissipando. Aurora possível em Canadá/Alasca.</div></div></div>
+      <div class="log-item"><div class="log-dot yellow"></div><div><div class="log-time">18–19 Mai 2026</div><div class="log-msg">CME de 16/mai impactou magnetosfera → Kp=4, abaixo do limiar G1. Bz não sustentado ao sul.</div></div></div>
+      <div class="log-item"><div class="log-dot blue"></div><div><div class="log-time">16 Mai 2026</div><div class="log-msg">CME detectada e lançada. Impacto previsto 18–19 mai confirmado abaixo de G1.</div></div></div>
+      <div class="log-item"><div class="log-dot yellow"></div><div><div class="log-time">04–05 Mai 2026</div><div class="log-msg">K-index Warning Kp=4. Vento rápido de buraco coronal. Limiar de tempestade menor não atingido.</div></div></div>
+      <div class="divider"></div>
+      <div class="card-title" style="margin-top:8px;"><span>📈</span> Tendência Solar Geral</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
+        <div style="flex:1;min-width:90px;background:var(--bg-card2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--green);">ESTÁVEL</div><div style="font-size:10px;color:var(--text-muted);margin-top:3px;">Tendência Atual</div></div>
+        <div style="flex:1;min-width:90px;background:var(--bg-card2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--yellow);">ATENÇÃO</div><div style="font-size:10px;color:var(--text-muted);margin-top:3px;">Far-side ARs (5–7d)</div></div>
+        <div style="flex:1;min-width:90px;background:var(--bg-card2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--accent-blue);">Ciclo 25</div><div style="font-size:10px;color:var(--text-muted);margin-top:3px;">Fase descendente</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUMÁRIO EXECUTIVO -->
+  <div class="card" style="border-left:3px solid var(--green);">
+    <div class="card-title"><span>📝</span> Sumário Executivo — 22 Mai 2026 · 13:25 UTC</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+      <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;">
+        O disco solar voltado para a Terra apresenta <strong style="color:var(--text-primary);">regiões ativas com configurações simples</strong> (alpha/beta) e comportamento estável. A atividade foi classificada como <strong style="color:var(--green);">BAIXA</strong> nas últimas 24h: <strong style="color:var(--text-primary);">8 flares C e 4 flares B</strong>. <strong style="color:var(--text-primary);">Nenhum flare M ou X.</strong> Probabilidade M: 20% | X: 5%. O Ciclo Solar 25 encontra-se em <strong style="color:var(--accent-blue);">fase descendente</strong> após o máximo solar de outubro de 2024, com queda significativa no número de manchas desde fevereiro de 2026.
+      </div>
+      <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;">
+        <strong style="color:var(--text-primary);">Nenhuma CME Earth-Directed</strong> detectada ou prevista. CME de 21/mai (10:26 UTC) confirmada como <strong style="color:var(--green);">não direcionada à Terra.</strong> Vento solar em desaceleração (~430 km/s, de HSS em dissipação) com retorno ao background previsto ainda hoje. Kp estimado máximo <strong style="color:var(--green);">3</strong>, sem tempestades geomagnéticas. <strong style="color:var(--yellow);">⚠️ Atenção preventiva:</strong> grandes regiões ativas no far-side se aproximam do limbo leste — possível aumento de atividade em <strong style="color:var(--yellow);">3–5 dias.</strong>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-sources">
+    🔗
+    <a href="https://www.swpc.noaa.gov" target="_blank">NOAA SWPC</a> ·
+    <a href="https://sdo.gsfc.nasa.gov" target="_blank">NASA SDO</a> ·
+    <a href="https://soho.nascom.nasa.gov" target="_blank">SOHO/LASCO</a> ·
+    <a href="https://www.spaceweatherlive.com" target="_blank">SpaceWeatherLive</a> ·
+    <a href="https://www.solarham.com" target="_blank">SolarHam</a> ·
+    <a href="https://earthsky.org/sun/" target="_blank">EarthSky</a>
+  </div>
+  <div class="footer-note">⚠️ Dados baseados em fontes públicas. Imagens NASA/NOAA carregadas em tempo real.</div>
+</div>
+
+<!-- ══════════════════════ DIVISOR ══════════════════════ -->
+<div style="margin:0;padding:0;background:#0a1929;">
+  <div style="height:3px;background:linear-gradient(to right,transparent,#2a6b5a,#22c55e,#2a6b5a,transparent);"></div>
+  <div style="text-align:center;padding:18px 0 14px;background:#0a1929;">
+    <span style="display:inline-block;background:#1C584D;color:#7fdec8;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:6px 22px;border-radius:20px;border:1px solid rgba(127,222,200,0.3);">🌍 Monitor Climático — América do Sul</span>
+  </div>
+</div>
+
+<!-- ══════════════════════ WEATHER SECTION ══════════════════════ -->
+<div id="weather-section" style="background:#1C584D;padding-bottom:0;">
+
+<style>
+  /* ── WEATHER THEME ── */
+  #weather-section {
+    --wb: #1C584D;
+    --wb-card: #174d43;
+    --wb-card2: #133d35;
+    --wb-border: rgba(80,180,150,0.25);
+    --wb-text: #d6f5ee;
+    --wb-muted: #7fbfb0;
+    --wb-dim: #4a8f80;
+    --wb-accent: #5de0c5;
+    --wb-blue: #60d4f8;
+    --w-sun: #ffd060;
+    --w-rain: #60b8f8;
+    --w-wind: #b0d8f0;
+    --w-cold: #88c8f8;
+    --w-hot: #f87060;
+    --w-green: #50d890;
+  }
+  .w-header {
+    background: linear-gradient(135deg,#133d35 0%,#1a5244 100%);
+    border-bottom: 1px solid var(--wb-border);
+    padding: 18px 28px 14px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  .w-title { font-size: 18px; font-weight: 700; color: var(--wb-text); letter-spacing: .5px; }
+  .w-subtitle { font-size: 12px; color: var(--wb-dim); margin-top: 2px; }
+  .w-date-badge { background: rgba(93,224,197,.12); color: var(--wb-accent); border: 1px solid rgba(93,224,197,.3); border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 700; }
+  .w-grid { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .w-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .w-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .w-card {
+    background: var(--wb-card); border: 1px solid var(--wb-border);
+    border-radius: 10px; padding: 16px 18px;
+  }
+  .w-card-title {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--wb-dim); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .w-divider { height: 1px; background: var(--wb-border); margin: 10px 0; }
+
+  /* Country banners */
+  .w-country-banner {
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 16px; border-radius: 8px; margin-bottom: 10px;
+  }
+  .w-country-banner.brazil  { background: rgba(0,150,80,.12);  border: 1px solid rgba(0,200,100,.2); }
+  .w-country-banner.arg     { background: rgba(100,150,220,.12); border: 1px solid rgba(120,170,240,.2); }
+  .w-country-banner.chile   { background: rgba(200,60,60,.12);  border: 1px solid rgba(220,80,80,.2); }
+  .w-country-flag { font-size: 22px; }
+  .w-country-name { font-size: 14px; font-weight: 700; color: var(--wb-text); }
+  .w-country-sub  { font-size: 11px; color: var(--wb-muted); margin-top: 1px; }
+
+  /* City weather card */
+  .w-city-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .w-city-card {
+    background: var(--wb-card2); border: 1px solid var(--wb-border);
+    border-radius: 8px; padding: 10px 12px;
+  }
+  .w-city-name  { font-size: 11px; font-weight: 700; color: var(--wb-accent); margin-bottom: 6px; }
+  .w-city-temp  { font-size: 22px; font-weight: 800; color: var(--wb-text); line-height: 1; }
+  .w-city-range { font-size: 10px; color: var(--wb-muted); margin-top: 2px; }
+  .w-city-cond  { font-size: 11px; color: var(--wb-text); margin-top: 5px; }
+  .w-city-stats { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+  .w-city-stat  { display: flex; align-items: center; gap: 3px; font-size: 10px; color: var(--wb-muted); }
+  .w-city-stat span { color: var(--wb-text); font-weight: 600; }
+
+  /* 14-day forecast strip */
+  .w-forecast-strip {
+    display: grid; gap: 4px; margin-top: 4px;
+    grid-template-columns: repeat(14, 1fr);
+  }
+  .w-fday {
+    background: var(--wb-card2); border: 1px solid var(--wb-border);
+    border-radius: 6px; padding: 5px 2px; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .w-fday-date  { font-size: 8px; color: var(--wb-dim); line-height: 1; }
+  .w-fday-icon  { font-size: 12px; line-height: 1; }
+  .w-fday-hi    { font-size: 9px; font-weight: 700; color: #f87060; }
+  .w-fday-lo    { font-size: 9px; color: #60b8f8; }
+  .w-fday-rain  { font-size: 8px; color: var(--wb-blue); }
+
+  /* Temp bar */
+  .w-temp-bar-wrap { position: relative; height: 6px; background: rgba(255,255,255,.08); border-radius: 3px; margin: 3px 1px; overflow: hidden; }
+  .w-temp-bar { position: absolute; height: 100%; border-radius: 3px; }
+
+  /* Wind rose */
+  .w-wind-card { display: flex; align-items: center; gap: 14px; }
+  .w-wind-circle {
+    width: 72px; height: 72px; border-radius: 50%;
+    border: 2px solid var(--wb-border); flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(93,224,197,.05);
+  }
+  .w-wind-val  { font-size: 18px; font-weight: 800; color: var(--wb-text); }
+  .w-wind-unit { font-size: 9px; color: var(--wb-dim); }
+  .w-wind-stats { flex: 1; }
+  .w-wrow { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid var(--wb-border); font-size: 11px; }
+  .w-wrow:last-child { border-bottom: none; }
+  .w-wlabel { color: var(--wb-muted); }
+  .w-wval   { color: var(--wb-text); font-weight: 600; }
+
+  /* Alert strip */
+  .w-alert-strip {
+    margin: 0 20px 14px;
+    background: rgba(80,216,144,.08);
+    border: 1px solid rgba(80,216,144,.25);
+    border-radius: 10px; padding: 12px 18px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .w-alert-dot { width: 12px; height: 12px; border-radius: 50%; background: #50d890; flex-shrink: 0; }
+  .w-alert-text { font-size: 12px; color: var(--wb-text); }
+
+  /* Source footer */
+  .w-footer {
+    background: #133d35; border-top: 1px solid var(--wb-border);
+    padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px; font-size: 11px; color: var(--wb-dim);
+  }
+  .w-footer a { color: var(--wb-accent); text-decoration: none; margin: 0 4px; }
+  .w-footer a:hover { text-decoration: underline; }
+
+  @media(max-width:900px){.w-row-3{grid-template-columns:1fr 1fr}.w-forecast-strip{grid-template-columns:repeat(7,1fr)}}
+  @media(max-width:600px){.w-row-2,.w-row-3{grid-template-columns:1fr}.w-city-grid{grid-template-columns:1fr}.w-forecast-strip{grid-template-columns:repeat(7,1fr)}}
+</style>
+
+<!-- W HEADER -->
+<div class="w-header">
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div style="font-size:30px;">🌍</div>
+    <div>
+      <div class="w-title">MONITOR CLIMÁTICO — BRASIL · ARGENTINA · CHILE</div>
+      <div class="w-subtitle">Temperatura · Precipitação · Vento · Previsão 14 dias · INMET · SMN · DMC · NOAA GFS</div>
+    </div>
+  </div>
+  <div class="w-date-badge">22 MAI 2026 · 13:25 UTC</div>
+</div>
+
+<!-- ALERT STRIP -->
+<div style="padding:14px 20px 0;">
+  <div class="w-alert-strip">
+    <div class="w-alert-dot"></div>
+    <div class="w-alert-text">
+      <strong style="color:#50d890;">Condições gerais estáveis</strong> no cone sul e sudeste brasileiro. Frente fria prevista para o período 27–29/mai sobre SP/PR. Outono avança com noites mais frias no sul. Estação chuvosa ativa em Manaus e Norte do Brasil.
+    </div>
+  </div>
+</div>
+
+<div class="w-grid">
+
+  <!-- ══ ROW: 3 países ══ -->
+  <div class="w-row-3">
+
+    <!-- ═══ BRASIL ═══ -->
+    <div class="w-card">
+      <div class="w-country-banner brazil">
+        <div class="w-country-flag">🇧🇷</div>
+        <div>
+          <div class="w-country-name">BRASIL</div>
+          <div class="w-country-sub">Outono · Transição seco/chuvoso regional</div>
+        </div>
+      </div>
+      <div class="w-city-grid">
+        <!-- SP -->
+        <div class="w-city-card">
+          <div class="w-city-name">📍 São Paulo</div>
+          <div class="w-city-temp">21°<span style="font-size:14px;font-weight:400;color:var(--wb-muted);">C</span></div>
+          <div class="w-city-range">Mín 15° · Máx 21°</div>
+          <div class="w-city-cond">⛅ Parcialmente nublado</div>
+          <div class="w-city-stats">
+            <div class="w-city-stat">🌧️ <span>20%</span></div>
+            <div class="w-city-stat">💨 <span>15 km/h NO</span></div>
+            <div class="w-city-stat">💧 <span>72%</span></div>
+          </div>
+        </div>
+        <!-- RJ -->
+        <div class="w-city-card">
+          <div class="w-city-name">📍 Rio de Janeiro</div>
+          <div class="w-city-temp">26°<span style="font-size:14px;font-weight:400;color:var(--wb-muted);">C</span></div>
+          <div class="w-city-range">Mín 18° · Máx 26°</div>
+          <div class="w-city-cond">☀️ Ensolarado</div>
+          <div class="w-city-stats">
+            <div class="w-city-stat">🌧️ <span>25%</span></div>
+            <div class="w-city-stat">💨 <span>20 km/h L</span></div>
+            <div class="w-city-stat">💧 <span>68%</span></div>
+          </div>
+        </div>
+        <!-- BSB -->
+        <div class="w-city-card">
+          <div class="w-city-name">📍 Brasília</div>
+          <div class="w-city-temp">28°<span style="font-size:14px;font-weight:400;color:var(--wb-muted);">C</span></div>
+          <div class="w-city-range">Mín 17° · Máx 28°</div>
+          <div class="w-city-cond">🌤️ Pouco nublado</div>
+          <div class="w-city-stats">
+            <div class="w-city-stat">🌧️ <span>10%</span></div>
+            <div class="w-city-stat">💨 <span>12 km/h L</span></div>
+            <div class="w-city-stat">💧 <span>55%</span></div>
+          </div>
+        </div>
+        <!-- Manaus -->
+        <div class="w-city-card">
+          <div class="w-city-name">📍 Manaus</div>
+          <div class="w-city-temp">32°<span style="font-size:14px;font-weight:400;color:var(--wb-muted);">C</span></div>
+          <div class="w-city-range">Mín 24° · Máx 32°</div>
+          <div class="w-city-cond">🌧️ Chuvas frequentes</div>
+          <div class="w-city-stats">
+            <div class="w-city-stat">🌧️ <span>70%</span></div>
+            <div class="w-city-stat">💨 <span>10 km/h NE</span></div>
+            <div class="w-city-stat">💧 <span>85%</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="w-card-title" style="margin-top:8px;"><span>🌡️</span> Visão macro — Brasil maio 2026</div>
+      <div style="font-size:11px;color:var(--wb-muted);line-height:1.6;">
+        Outono avança no Sul e Sudeste. <strong style="color:var(--wb-text);">Temperaturas acima do normal</strong> no Centro-Oeste e interior de SP. Seca estabelecida no PR e centro-leste de SC. Norte e Nordeste com <strong style="color:var(--w-rain);">chuva acima da média.</strong> Rio Grande do Sul com volume pluviométrico elevado.
+      </div>
+    </div>
+
+    <!-- ═══ ARGENTINA ═══ -->
+    <div class="w-card">
+      <div class="w-country-banner arg">
+        <div class="w-country-flag">🇦🇷</div>
+        <div>
+          <div class="w-country-name">ARGENTINA</div>
+          <div class="w-country-sub">Outono · Resfriamento progressivo</div>
+        </div>
+      </div>
+      <div class="w-city-grid">
+        <!-- BUE -->
+        <div class="w-city-card">
+          <div class="w-city-name">📍 Buenos Aires</div>
+          <div class="w-city-temp">17°<span style="font-size:14px;font-weight:400;color:var(--wb-muted);">C</span></div>
+          <div class="w-city-range">Mín 11° · Máx 17°</div>
+          <div class="w-city-cond">⛅ Parcialmente nublado</div>
+          <div class="w-city-stats">
+            <div class="w-city-stat">🌧️ <span>30%</span></div>
+            <div class="w-city-stat">💨 <span>18 km/h SO</span></div>
+            <div class="w-city-stat">💧 <span>70%</span></div>
+          </div>
+        </div>
+        <!-- CBA -->
+        <div class="w-city-card">
+          <div class="w-city-name">📍 Córdoba</div>
+          <div class="w-city-temp">19°<span style="font-size:14px;font-weight:400;color:var(--wb-muted);">C</span></div>
+          <div class="w-city-range">Mín 9° · Máx 19°</div>
+          <div class="w-city-cond">☀️ Ensolarado</div>
+          <div class="w-city-stats">
+            <div class="w-city-stat">🌧️ <span>15%</span></div>
+            <div class="w-city-stat">💨 <span>12 km/h N</span></div>
+            <div class="w-city-stat">💧 <span>58%</span></div>
+          </div>
+        </div>
+        <!-- MDZ -->
+        <div class="w-city-card">
+          <div class="w-city-name">📍 Mendoza</div>
+          <div class="w-city-temp">17°<span style="font-size:14px;font-weight:400;color:var(--wb-muted);">C</span></div>
+          <div class="w-city-range">Mín 5° · Máx 17°</div>
+          <div class="w-city-cond">☀️ Sol e frio à noite</div>
+          <div class="w-city-stats">
+            <div class="w-city-stat">🌧️ <span>5%</span></div>
+            <div class="w-city-stat">💨 <span>10 km/h E</span></div>
+            <div class="w-city-stat">💧 <span>45%</span></div>
+          </div>
+        </div>
+        <!-- ROS -->
+        <div class="w-city-card">
+          <div class="w-city-name">📍 Rosário</div>
+          <div class="w-city-temp">18°<span style="font-size:14px;font-weight:400;color:var(--wb-muted);">C</span></div>
+          <div class="w-city-range">Mín 10° · Máx 18°</div>
+          <div class="w-city-cond">🌤️ Maioria sol</div>
+          <div class="w-city-stats">
+            <div class="w-city-stat">🌧️ <span>20%</span></div>
+            <div class="w-city-stat">💨 <span>16 km/h SE</span></div>
+            <div class="w-city-stat">💧 <span>62%</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="w-card-title" style="margin-top:8px;"><span>🌡️</span> Visão macro — Argentina maio 2026</div>
+      <div style="font-size:11px;color:var(--wb-muted);line-height:1.6;">
+        Outono com <strong style="color:var(--wb-text);">calor anômalo</strong> persistindo sobre o território. Temperaturas acima do normal para o mês. Frentes ocasionais trazem chuva rápida ao litoral bonaerense. <strong style="color:var(--w-cold);">Andino já com geadas noturnas</strong> em Mendoza e Salta. Patagônia em transição para inverno.
+      </div>
+    </div>
+
+    <!-- ═══ CHILE ═══ -->
+    <div class="w-card">
+      <div class="w-country-banner chile">
+        <div class="w-country-flag">🇨🇱</div>
+        <div>
+          <div class="w-country-name">CHILE</div>
+          <div class="w-country-sub">Outono · Início da estação chuvosa no centro-sul</div>
+        </div>
+      </div>
+      <div class="w-city-grid">
+        <!-- SCL -->
+        <div class="w-city-card">
+          <div class="w-city-name">📍 Santiago</div>
+          <div class="w-city-temp">18°<span style="font-size:14px;font-weight:400;color:var(--wb-muted);">C</span></div>
+          <div class="w-city-range">Mín 8° · Máx 18°</div>
+          <div class="w-city-cond">⛅ Nublado / frente</div>
+          <div class="w-city-stats">
+            <div class="w-city-stat">🌧️ <span>40%</span></div>
+            <div class="w-city-stat">💨 <span>15 km/h SE</span></div>
+            <div class="w-city-stat">💧 <span>65%</span></div>
+          </div>
+        </div>
+        <!-- Valpa -->
+        <div class="w-city-card">
+          <div class="w-city-name">📍 Valparaíso</div>
+          <div class="w-city-temp">16°<span style="font-size:14px;font-weight:400;color:var(--wb-muted);">C</span></div>
+          <div class="w-city-range">Mín 10° · Máx 16°</div>
+          <div class="w-city-cond">🌧️ Nublado com chuva</div>
+          <div class="w-city-stats">
+            <div class="w-city-stat">🌧️ <span>55%</span></div>
+            <div class="w-city-stat">💨 <span>28 km/h O</span></div>
+            <div class="w-city-stat">💧 <span>78%</span></div>
+          </div>
+        </div>
+        <!-- Temuco -->
+        <div class="w-city-card">
+          <div class="w-city-name">📍 Temuco</div>
+          <div class="w-city-temp">11°<span style="font-size:14px;font-weight:400;color:var(--wb-muted);">C</span></div>
+          <div class="w-city-range">Mín 4° · Máx 11°</div>
+          <div class="w-city-cond">🌧️ Chuvas persistentes</div>
+          <div class="w-city-stats">
+            <div class="w-city-stat">🌧️ <span>80%</span></div>
+            <div class="w-city-stat">💨 <span>22 km/h SO</span></div>
+            <div class="w-city-stat">💧 <span>88%</span></div>
+          </div>
+        </div>
+        <!-- Antofagasta -->
+        <div class="w-city-card">
+          <div class="w-city-name">📍 Antofagasta</div>
+          <div class="w-city-temp">20°<span style="font-size:14px;font-weight:400;color:var(--wb-muted);">C</span></div>
+          <div class="w-city-range">Mín 13° · Máx 20°</div>
+          <div class="w-city-cond">☀️ Sol (deserto Atacama)</div>
+          <div class="w-city-stats">
+            <div class="w-city-stat">🌧️ <span>2%</span></div>
+            <div class="w-city-stat">💨 <span>20 km/h SO</span></div>
+            <div class="w-city-stat">💧 <span>72%</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="w-card-title" style="margin-top:8px;"><span>🌡️</span> Visão macro — Chile maio 2026</div>
+      <div style="font-size:11px;color:var(--wb-muted);line-height:1.6;">
+        Zona central em transição para a <strong style="color:var(--w-rain);">estação chuvosa</strong> de inverno. Santiago com 22 mm acumulados no mês (abaixo da média). Sul do país (<strong style="color:var(--wb-text);">Temuco, Puerto Montt</strong>) com chuvas persistentes. Norte desértico (Atacama) seco e ameno. Andino com neve nas cotas mais altas.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PREVISÃO 14 DIAS ══ -->
+  <div class="w-card">
+    <div class="w-card-title"><span>📅</span> Previsão 14 Dias — Principais Cidades (22 Mai – 04 Jun 2026)</div>
+
+    <!-- SUDESTE -->
+    <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--wb-dim);margin-bottom:8px;padding:4px 8px;background:rgba(93,224,197,.08);border-radius:4px;display:inline-block;">🗺️ Sudeste & Interior Paulista</div>
+
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--wb-accent);margin-bottom:5px;">🇧🇷 São Paulo — SP</div>
+      <div class="w-forecast-strip" id="sp-strip"></div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--wb-accent);margin-bottom:5px;">🇧🇷 Campinas — SP</div>
+      <div class="w-forecast-strip" id="cam-strip"></div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--wb-accent);margin-bottom:5px;">🇧🇷 Indaiatuba — SP</div>
+      <div class="w-forecast-strip" id="ind-strip"></div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--wb-accent);margin-bottom:5px;">🇧🇷 Rio de Janeiro — RJ</div>
+      <div class="w-forecast-strip" id="rj-strip"></div>
+    </div>
+
+    <div class="w-divider"></div>
+
+    <!-- SUL -->
+    <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--wb-dim);margin:8px 0;padding:4px 8px;background:rgba(96,184,248,.08);border-radius:4px;display:inline-block;">🗺️ Sul do Brasil</div>
+
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:#88d4f8;margin-bottom:5px;">🇧🇷 Curitiba — PR</div>
+      <div class="w-forecast-strip" id="cwb-strip"></div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:#88d4f8;margin-bottom:5px;">🇧🇷 Florianópolis — SC</div>
+      <div class="w-forecast-strip" id="fln-strip"></div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:#88d4f8;margin-bottom:5px;">🇧🇷 Porto Alegre — RS</div>
+      <div class="w-forecast-strip" id="poa-strip"></div>
+    </div>
+
+    <div class="w-divider"></div>
+
+    <!-- EXTERIOR -->
+    <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--wb-dim);margin:8px 0;padding:4px 8px;background:rgba(255,255,255,.05);border-radius:4px;display:inline-block;">🗺️ Cone Sul</div>
+
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:#88b8f8;margin-bottom:5px;">🇦🇷 Buenos Aires, Argentina</div>
+      <div class="w-forecast-strip" id="bue-strip"></div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#f89090;margin-bottom:5px;">🇨🇱 Santiago, Chile</div>
+      <div class="w-forecast-strip" id="scl-strip"></div>
+    </div>
+
+    <div style="margin-top:12px;font-size:10px;color:var(--wb-dim);line-height:1.7;">
+      🌡️ Temperaturas em °C · 💧 Prob. chuva · 🌊 Volume estimado (mm/dia) · Ícones: ☀️ Ensolarado · ⛅ Nublado · 🌦️ Pancadas · 🌧️ Chuva · ❄️ Frio ·
+      Barras: <span style="color:#f87060;">■</span> Máx &nbsp;<span style="color:#60b8f8;">■</span> Mín
+      <br>⚠️ <strong style="color:#f0c060;">Atenção 27–29/mai:</strong> Massa de Ar Polar intensa sobre SP — mínimas próximas de 10°C. Fonte: Climatempo / INMET / CPG.
+    </div>
+  </div>
+
+  <!-- ══ VENTO & PRECIPITAÇÃO MACRO ══ -->
+  <div class="w-row-3">
+
+    <div class="w-card">
+      <div class="w-card-title"><span>💨</span> Ventos Dominantes — Região</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+        <div class="w-wrow" style="padding:6px 0;">
+          <span class="w-wlabel">🇧🇷 SP/RJ — Litoral</span>
+          <span class="w-wval">NE/SE · 15–25 km/h</span>
+        </div>
+        <div class="w-wrow" style="padding:6px 0;">
+          <span class="w-wlabel">🇧🇷 Sul (SC/PR/RS)</span>
+          <span class="w-wval">SW/NO · 20–35 km/h</span>
+        </div>
+        <div class="w-wrow" style="padding:6px 0;">
+          <span class="w-wlabel">🇧🇷 Centro-Oeste</span>
+          <span class="w-wval">E/SE · 10–18 km/h</span>
+        </div>
+        <div class="w-wrow" style="padding:6px 0;">
+          <span class="w-wlabel">🇦🇷 Buenos Aires</span>
+          <span class="w-wval">SW/SE · 16–22 km/h</span>
+        </div>
+        <div class="w-wrow" style="padding:6px 0;">
+          <span class="w-wlabel">🇦🇷 Patagônia</span>
+          <span class="w-wval">O (Zonda) · 40–70 km/h</span>
+        </div>
+        <div class="w-wrow" style="padding:6px 0;">
+          <span class="w-wlabel">🇨🇱 Costa Pacífica</span>
+          <span class="w-wval">SO/O · 20–30 km/h</span>
+        </div>
+        <div class="w-wrow" style="padding:6px 0;">
+          <span class="w-wlabel">🇨🇱 Patagônia Chilena</span>
+          <span class="w-wval">O (rajadas) · 50–90 km/h</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="w-card">
+      <div class="w-card-title"><span>🌧️</span> Precipitação Acumulada — Maio 2026</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
+        <div style="font-size:10px;color:var(--wb-dim);margin-bottom:2px;">mm acumulados até 22/mai</div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <div style="width:80px;font-size:11px;color:var(--wb-muted);">Manaus</div>
+          <div style="flex:1;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;">
+            <div style="height:100%;width:85%;background:#60b8f8;border-radius:4px;"></div>
+          </div>
+          <div style="width:40px;font-size:11px;color:var(--wb-text);font-weight:600;text-align:right;">~180mm</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <div style="width:80px;font-size:11px;color:var(--wb-muted);">Fortaleza</div>
+          <div style="flex:1;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;">
+            <div style="height:100%;width:70%;background:#60b8f8;border-radius:4px;"></div>
+          </div>
+          <div style="width:40px;font-size:11px;color:var(--wb-text);font-weight:600;text-align:right;">~120mm</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <div style="width:80px;font-size:11px;color:var(--wb-muted);">Porto Alegre</div>
+          <div style="flex:1;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;">
+            <div style="height:100%;width:55%;background:#60b8f8;border-radius:4px;"></div>
+          </div>
+          <div style="width:40px;font-size:11px;color:var(--wb-text);font-weight:600;text-align:right;">~95mm</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <div style="width:80px;font-size:11px;color:var(--wb-muted);">Bs. Aires</div>
+          <div style="flex:1;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;">
+            <div style="height:100%;width:32%;background:#88b8f8;border-radius:4px;"></div>
+          </div>
+          <div style="width:40px;font-size:11px;color:var(--wb-text);font-weight:600;text-align:right;">~45mm</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <div style="width:80px;font-size:11px;color:var(--wb-muted);">São Paulo</div>
+          <div style="flex:1;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;">
+            <div style="height:100%;width:28%;background:#60c878;border-radius:4px;"></div>
+          </div>
+          <div style="width:40px;font-size:11px;color:var(--wb-text);font-weight:600;text-align:right;">~38mm</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <div style="width:80px;font-size:11px;color:var(--wb-muted);">Temuco</div>
+          <div style="flex:1;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;">
+            <div style="height:100%;width:65%;background:#f89090;border-radius:4px;"></div>
+          </div>
+          <div style="width:40px;font-size:11px;color:var(--wb-text);font-weight:600;text-align:right;">~110mm</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:80px;font-size:11px;color:var(--wb-muted);">Santiago</div>
+          <div style="flex:1;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;">
+            <div style="height:100%;width:14%;background:#f89090;border-radius:4px;"></div>
+          </div>
+          <div style="width:40px;font-size:11px;color:var(--wb-text);font-weight:600;text-align:right;">~22mm</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="w-card">
+      <div class="w-card-title"><span>🌡️</span> Anomalia Térmica — Maio 2026</div>
+      <div style="font-size:11px;color:var(--wb-muted);line-height:1.7;margin-top:4px;">
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--wb-border);">
+          <span>Centro-Oeste BR</span><span style="color:#f87060;font-weight:700;">+2°C a +3°C acima</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--wb-border);">
+          <span>Sudeste BR</span><span style="color:#f0a060;font-weight:700;">+1°C a +2°C acima</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--wb-border);">
+          <span>Sul BR (RS)</span><span style="color:#60c878;font-weight:700;">Próximo ao normal</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--wb-border);">
+          <span>Argentina (geral)</span><span style="color:#f87060;font-weight:700;">+1°C a +2°C acima</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--wb-border);">
+          <span>Chile central</span><span style="color:#60c878;font-weight:700;">Normal a +1°C</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;">
+          <span>Patagônia</span><span style="color:#60b8f8;font-weight:700;">-0.5°C a normal</span>
+        </div>
+      </div>
+      <div style="margin-top:10px;padding:8px 10px;background:rgba(248,112,96,.08);border:1px solid rgba(248,112,96,.2);border-radius:6px;font-size:10px;color:var(--wb-muted);">
+        ⚠️ <strong style="color:#f87060;">El Niño em desenvolvimento (2026)</strong> — padrão indica calor e seca no Brasil central, outono quente na Argentina e inverno ameno no Chile.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SISTEMAS OCEÂNICOS E ATMOSFÉRICOS ══ -->
+  <div class="w-card" style="border-left:3px solid rgba(248,112,96,0.6);">
+    <div class="w-card-title"><span>🌊</span> Sistemas Oceânicos & Atmosféricos — Impacto no Brasil / Sudeste</div>
+    <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:16px;">
+
+      <!-- MAPA SVG ESQUEMÁTICO -->
+      <div>
+        <svg viewBox="0 0 310 400" xmlns="http://www.w3.org/2000/svg" style="width:100%;border-radius:8px;border:1px solid var(--wb-border);">
+          <defs>
+            <radialGradient id="gmap" cx="50%" cy="50%" r="70%">
+              <stop offset="0%" stop-color="#071828"/>
+              <stop offset="100%" stop-color="#030d18"/>
+            </radialGradient>
+            <!-- arrows -->
+            <marker id="arrowB" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#60b8f8"/>
+            </marker>
+            <marker id="arrowR" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#f87060"/>
+            </marker>
+            <marker id="arrowY" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#f0c060"/>
+            </marker>
+          </defs>
+
+          <!-- Ocean background -->
+          <rect width="310" height="400" fill="url(#gmap)"/>
+
+          <!-- Ocean labels -->
+          <text x="18" y="200" font-family="sans-serif" font-size="8" fill="rgba(56,189,248,0.35)" transform="rotate(-90,18,200)" text-anchor="middle">PACÍFICO SUL</text>
+          <text x="292" y="200" font-family="sans-serif" font-size="8" fill="rgba(56,189,248,0.35)" transform="rotate(90,292,200)" text-anchor="middle">ATLÂNTICO SUL</text>
+
+          <!-- South America land mass (simplified polygon) -->
+          <path d="
+            M 110,18 L 142,12 L 182,22 L 232,30 L 268,36
+            L 286,62 L 295,98 L 285,132 L 274,158 L 264,178
+            L 250,192 L 236,204 L 215,218 L 192,232
+            L 176,246 L 162,258 L 152,270 L 142,282
+            L 132,294 L 122,308 L 112,326 L 104,342 L 98,358
+            L 88,350 L 80,334 L 74,314 L 70,290 L 66,264
+            L 64,236 L 62,208 L 60,178 L 58,148
+            L 56,118 L 58,88 L 62,62 L 70,40 L 82,24 L 110,18 Z
+          " fill="#1a3a24" stroke="rgba(80,160,100,0.4)" stroke-width="1"/>
+
+          <!-- Interior highlight Brazil -->
+          <path d="M 145,22 L 268,36 L 286,62 L 295,98 L 285,132 L 274,158 L 264,178 L 250,192 L 236,204 L 215,218 L 192,232 L 176,246 L 162,258 L 152,270 L 142,282 L 132,294 L 122,308 L 112,326 L 108,338 L 100,318 L 96,295 L 92,272 L 88,245 L 86,218 L 88,192 L 95,168 L 105,148 L 118,130 L 132,115 L 145,95 L 148,68 L 145,45 Z"
+            fill="#1f4028" stroke="rgba(80,180,100,0.25)" stroke-width="0.8"/>
+
+          <!-- Antártida strip -->
+          <rect x="0" y="375" width="310" height="25" fill="rgba(180,220,255,0.12)" rx="0"/>
+          <text x="155" y="390" font-family="sans-serif" font-size="8" fill="rgba(180,220,255,0.5)" text-anchor="middle">ANTÁRTIDA</text>
+
+          <!-- === WEATHER SYSTEMS === -->
+
+          <!-- 1. MASSA AR POLAR (MAP-2) — grande blob azul sobre Patagônia avançando N -->
+          <ellipse cx="100" cy="330" rx="60" ry="35" fill="rgba(96,184,248,0.18)" stroke="rgba(96,184,248,0.6)" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <text x="100" y="325" font-family="sans-serif" font-size="7.5" fill="#88c8f8" text-anchor="middle" font-weight="bold">❄️ MAP-2</text>
+          <text x="100" y="335" font-family="sans-serif" font-size="6.5" fill="rgba(136,200,248,0.8)" text-anchor="middle">Massa Polar</text>
+
+          <!-- Arrow MAP-2 avançando para NE (para SP) -->
+          <line x1="112" y1="302" x2="148" y2="256" stroke="#60b8f8" stroke-width="2" marker-end="url(#arrowB)" stroke-dasharray="5,3"/>
+          <line x1="116" y1="300" x2="172" y2="250" stroke="#60b8f8" stroke-width="1.5" marker-end="url(#arrowB)" stroke-dasharray="4,3" opacity=".6"/>
+
+          <!-- 2. FRENTE FRIA FF3 — linha cruzando RS/SC em direção a SP -->
+          <path d="M 65,278 Q 110,262 150,268 Q 185,272 210,258" fill="none" stroke="#9060f8" stroke-width="2.5"/>
+          <path d="M 65,278 Q 110,262 150,268 Q 185,272 210,258" fill="none" stroke="rgba(144,96,248,0.3)" stroke-width="6"/>
+          <!-- triangles on front line -->
+          <polygon points="80,270 87,263 94,270" fill="#9060f8" opacity=".8"/>
+          <polygon points="112,262 119,255 126,262" fill="#9060f8" opacity=".8"/>
+          <polygon points="150,264 157,257 164,264" fill="#9060f8" opacity=".8"/>
+          <polygon points="186,260 193,253 200,260" fill="#9060f8" opacity=".8"/>
+          <text x="136" y="252" font-family="sans-serif" font-size="7" fill="#b090f8" text-anchor="middle" font-weight="bold">FF3 — Frente Fria</text>
+
+          <!-- 3. CICLONE EXTRATROPICAL — no Atlântico Sul -->
+          <circle cx="268" cy="290" r="22" fill="rgba(248,112,96,0.08)" stroke="rgba(248,112,96,0.5)" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <!-- spiral ciclone -->
+          <path d="M268,278 C278,282 278,298 268,302 C258,306 252,295 262,290 C268,287 274,290 268,295" fill="none" stroke="rgba(248,112,96,0.8)" stroke-width="1.5"/>
+          <text x="268" y="270" font-family="sans-serif" font-size="7" fill="#f89090" text-anchor="middle" font-weight="bold">🌀 CExt</text>
+          <text x="268" y="280" font-family="sans-serif" font-size="6" fill="rgba(248,144,144,0.7)" text-anchor="middle">Dissipando</text>
+          <!-- arrow winds from ciclone toward SP coast -->
+          <line x1="250" y1="280" x2="220" y2="226" stroke="#f89090" stroke-width="1.2" marker-end="url(#arrowR)" stroke-dasharray="3,3" opacity=".5"/>
+
+          <!-- 4. ASAS — Alta Subtropical Atlântico -->
+          <circle cx="285" cy="180" r="18" fill="rgba(240,192,96,0.1)" stroke="rgba(240,192,96,0.4)" stroke-width="1" stroke-dasharray="3,4"/>
+          <text x="285" y="177" font-family="sans-serif" font-size="10" fill="#f0c060" text-anchor="middle" font-weight="bold">H</text>
+          <text x="285" y="188" font-family="sans-serif" font-size="6.5" fill="rgba(240,192,96,0.7)" text-anchor="middle">ASAS</text>
+          <!-- arrows from ASAS toward coast -->
+          <line x1="270" y1="178" x2="248" y2="196" stroke="#f0c060" stroke-width="1.2" marker-end="url(#arrowY)" opacity=".5"/>
+          <line x1="272" y1="188" x2="252" y2="210" stroke="#f0c060" stroke-width="1"   marker-end="url(#arrowY)" opacity=".4"/>
+
+          <!-- 5. ZCIT — Norte do Brasil -->
+          <path d="M 60,28 Q 140,10 280,32" fill="none" stroke="rgba(248,200,96,0.5)" stroke-width="2" stroke-dasharray="6,3"/>
+          <text x="170" y="22" font-family="sans-serif" font-size="7" fill="rgba(248,200,96,0.7)" text-anchor="middle">ZCIT</text>
+
+          <!-- 6. ONDAS DO ATLÂNTICO —setas oceanicas -->
+          <line x1="302" y1="140" x2="280" y2="155" stroke="rgba(56,189,248,0.35)" stroke-width="1.5" marker-end="url(#arrowB)" stroke-dasharray="3,3"/>
+          <line x1="302" y1="158" x2="280" y2="170" stroke="rgba(56,189,248,0.35)" stroke-width="1.5" marker-end="url(#arrowB)" stroke-dasharray="3,3"/>
+          <text x="302" y="135" font-family="sans-serif" font-size="6" fill="rgba(56,189,248,0.5)" text-anchor="end">Ondas/ventos</text>
+
+          <!-- 7. CORRENTE PACÍFICO — setas lado esquerdo -->
+          <line x1="28" y1="140" x2="55" y2="152" stroke="rgba(56,189,248,0.3)" stroke-width="1.2" marker-end="url(#arrowB)" stroke-dasharray="3,3"/>
+          <line x1="28" y1="158" x2="55" y2="168" stroke="rgba(56,189,248,0.3)" stroke-width="1.2" marker-end="url(#arrowB)" stroke-dasharray="3,3"/>
+
+          <!-- CITY DOTS -->
+          <!-- SP = ~(155,198) -->
+          <circle cx="214" cy="198" r="4" fill="#f0c060" stroke="#fff" stroke-width="1"/>
+          <text x="220" y="194" font-family="sans-serif" font-size="7" fill="#f0d080">SP</text>
+          <!-- RJ = ~(220,185) -->
+          <circle cx="232" cy="186" r="3" fill="#88e8a8" stroke="#fff" stroke-width="0.8"/>
+          <text x="236" y="183" font-family="sans-serif" font-size="6.5" fill="#88e8a8">RJ</text>
+          <!-- Curitiba -->
+          <circle cx="200" cy="215" r="3" fill="#88d4f8" stroke="#fff" stroke-width="0.8"/>
+          <text x="204" y="213" font-family="sans-serif" font-size="6" fill="#88d4f8">CWB</text>
+          <!-- Floripa -->
+          <circle cx="186" cy="228" r="2.5" fill="#88d4f8" stroke="#fff" stroke-width="0.8"/>
+          <text x="190" y="226" font-family="sans-serif" font-size="6" fill="#88d4f8">FLN</text>
+          <!-- POA -->
+          <circle cx="170" cy="245" r="2.5" fill="#88d4f8" stroke="#fff" stroke-width="0.8"/>
+          <text x="174" y="243" font-family="sans-serif" font-size="6" fill="#88d4f8">POA</text>
+          <!-- Buenos Aires -->
+          <circle cx="144" cy="280" r="3" fill="#88b8f8" stroke="#fff" stroke-width="0.8"/>
+          <text x="106" y="277" font-family="sans-serif" font-size="6" fill="#88b8f8">Buenos Aires</text>
+          <!-- Santiago -->
+          <circle cx="72" cy="228" r="2.5" fill="#f89090" stroke="#fff" stroke-width="0.8"/>
+          <text x="38" y="225" font-family="sans-serif" font-size="6" fill="#f89090">Santiago</text>
+
+          <!-- LEGEND bottom -->
+          <rect x="6" y="350" width="180" height="22" rx="3" fill="rgba(0,0,0,0.4)"/>
+          <line x1="12" y1="360" x2="28" y2="360" stroke="#60b8f8" stroke-width="2" stroke-dasharray="4,2"/>
+          <text x="32" y="363" font-family="sans-serif" font-size="6" fill="rgba(200,220,255,0.7)">Ar Polar</text>
+          <line x1="70" y1="360" x2="86" y2="360" stroke="#9060f8" stroke-width="2"/>
+          <text x="90" y="363" font-family="sans-serif" font-size="6" fill="rgba(200,220,255,0.7)">Frente Fria</text>
+          <circle cx="140" cy="360" r="4" fill="none" stroke="rgba(248,112,96,0.7)" stroke-width="1"/>
+          <text x="147" y="363" font-family="sans-serif" font-size="6" fill="rgba(200,220,255,0.7)">Ciclone</text>
+
+          <!-- Title -->
+          <text x="155" y="8" font-family="monospace" font-size="7" fill="rgba(150,200,180,0.6)" text-anchor="middle">CARTA SINÓTICA — 22 MAI 2026</text>
+        </svg>
+      </div>
+
+      <!-- ALERT CARDS DOS SISTEMAS -->
+      <div style="display:flex;flex-direction:column;gap:8px;">
+
+        <!-- MAP-2 -->
+        <div style="background:rgba(96,184,248,0.08);border:1px solid rgba(96,184,248,0.3);border-left:3px solid #60b8f8;border-radius:8px;padding:10px 12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+            <span style="font-size:12px;font-weight:700;color:#88c8f8;">❄️ Massa de Ar Polar — MAP-2/2026</span>
+            <span style="font-size:9px;background:rgba(248,112,96,0.2);color:#f87060;border:1px solid rgba(248,112,96,0.3);border-radius:10px;padding:1px 7px;font-weight:700;">CRÍTICO PARA SP</span>
+          </div>
+          <div style="font-size:11px;color:var(--wb-muted);line-height:1.6;">
+            <strong style="color:var(--wb-text);">Origem:</strong> Antártida → Patagônia → Sul do Brasil<br>
+            <strong style="color:var(--wb-text);">Entrada no estado de SP:</strong> 27–29 de maio<br>
+            <strong style="color:var(--wb-text);">Mín. esperada em SP:</strong> <span style="color:#60b8f8;font-weight:700;">~10–12°C</span><br>
+            <strong style="color:var(--wb-text);">Vento associado:</strong> 15–25 km/h SO · Rajadas até 45 km/h<br>
+            <strong style="color:var(--wb-text);">Duração:</strong> 3–4 dias (27/mai–01/jun)
+          </div>
+        </div>
+
+        <!-- FF3 -->
+        <div style="background:rgba(144,96,248,0.08);border:1px solid rgba(144,96,248,0.3);border-left:3px solid #9060f8;border-radius:8px;padding:10px 12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+            <span style="font-size:12px;font-weight:700;color:#b090f8;">🌩️ Frente Fria F3 — associada à MAP-2</span>
+            <span style="font-size:9px;background:rgba(248,192,96,0.2);color:#f0c060;border:1px solid rgba(248,192,96,0.3);border-radius:10px;padding:1px 7px;font-weight:700;">EM AVANÇO</span>
+          </div>
+          <div style="font-size:11px;color:var(--wb-muted);line-height:1.6;">
+            <strong style="color:var(--wb-text);">Posição atual:</strong> Uruguai / Rio Grande do Sul<br>
+            <strong style="color:var(--wb-text);">Direção:</strong> NE → atingindo SP 27/mai, RJ 28/mai<br>
+            <strong style="color:var(--wb-text);">Chuva acumulada SP:</strong> <span style="color:#60b8f8;font-weight:700;">12–20 mm</span> em 48h<br>
+            <strong style="color:var(--wb-text);">Rajadas no Sul:</strong> até 65–80 km/h (SC/PR/RS)<br>
+            <strong style="color:var(--wb-text);">Risco:</strong> Alagamentos em regiões baixas de SP
+          </div>
+        </div>
+
+        <!-- Ciclone Extratropical -->
+        <div style="background:rgba(248,112,96,0.07);border:1px solid rgba(248,112,96,0.25);border-left:3px solid #f87060;border-radius:8px;padding:10px 12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+            <span style="font-size:12px;font-weight:700;color:#f89090;">🌀 Ciclone Extratropical — Atlântico Sul</span>
+            <span style="font-size:9px;background:rgba(96,184,248,0.15);color:#60b8f8;border:1px solid rgba(96,184,248,0.3);border-radius:10px;padding:1px 7px;font-weight:700;">DISSIPANDO</span>
+          </div>
+          <div style="font-size:11px;color:var(--wb-muted);line-height:1.6;">
+            <strong style="color:var(--wb-text);">Posição:</strong> ~30°S, 47°W — ao largo do litoral RS/SC<br>
+            <strong style="color:var(--wb-text);">Status:</strong> Em dissipação após fase de "ciclone-bomba"<br>
+            <strong style="color:var(--wb-text);">Influência residual:</strong> Ventos E/NE no litoral SP/RJ (15–25 km/h)<br>
+            <strong style="color:var(--wb-text);">Mar agitado:</strong> Ondas 2–3m no litoral sul de SP<br>
+            <strong style="color:var(--wb-text);">Rastro:</strong> Temporais com granizo associados no início de maio
+          </div>
+        </div>
+
+        <!-- ASAS -->
+        <div style="background:rgba(240,192,96,0.07);border:1px solid rgba(240,192,96,0.25);border-left:3px solid #f0c060;border-radius:8px;padding:10px 12px;">
+          <div style="margin-bottom:5px;font-size:12px;font-weight:700;color:#f0d080;">⬆️ Alta Subtropical do Atlântico Sul (ASAS)</div>
+          <div style="font-size:11px;color:var(--wb-muted);line-height:1.6;">
+            <strong style="color:var(--wb-text);">Posição:</strong> ~25°S, 30°W — central no Atlântico Sul<br>
+            <strong style="color:var(--wb-text);">Intensidade:</strong> Moderada (1020–1024 hPa)<br>
+            <strong style="color:var(--wb-text);">Efeito no SE:</strong> Ventos SE/E no litoral · estabilidade temporária<br>
+            <strong style="color:var(--wb-text);">Papel:</strong> Bloqueia sistemas do sul, mas cede com a MAP-2
+          </div>
+        </div>
+
+        <!-- El Niño / Pacífico -->
+        <div style="background:rgba(80,216,144,0.07);border:1px solid rgba(80,216,144,0.2);border-left:3px solid #50d890;border-radius:8px;padding:10px 12px;">
+          <div style="margin-bottom:5px;font-size:12px;font-weight:700;color:#70d8a0;">🌊 El Niño em Desenvolvimento — Influência Pacífico</div>
+          <div style="font-size:11px;color:var(--wb-muted);line-height:1.6;">
+            <strong style="color:var(--wb-text);">Status:</strong> El Niño moderado em formação no Pacífico Equatorial<br>
+            <strong style="color:var(--wb-text);">Impacto no Brasil (mai–jun):</strong> Chuva acima do normal no Sul, seca no Centro-Norte<br>
+            <strong style="color:var(--wb-text);">Impacto em SP:</strong> Outono com frentes frias mais frequentes e intensas<br>
+            <strong style="color:var(--wb-text);">Anomalia térmica:</strong> Temperaturas acima do normal entre frentes<br>
+            <strong style="color:var(--wb-text);">Fonte:</strong> Climate Impact Company / NOAA CPC (mai 2026)
+          </div>
+        </div>
+
+        <!-- ZCIT -->
+        <div style="background:rgba(248,200,96,0.06);border:1px solid rgba(248,200,96,0.2);border-left:3px solid rgba(248,200,96,0.6);border-radius:8px;padding:10px 12px;">
+          <div style="margin-bottom:5px;font-size:12px;font-weight:700;color:rgba(248,200,96,0.9);">☁️ ZCIT — Zona de Convergência Intertropical</div>
+          <div style="font-size:11px;color:var(--wb-muted);line-height:1.6;">
+            <strong style="color:var(--wb-text);">Posição:</strong> Norte do Brasil / Equador (~5°N–5°S)<br>
+            <strong style="color:var(--wb-text);">Status:</strong> Ativa — favorece chuvas no Norte e Nordeste<br>
+            <strong style="color:var(--wb-text);">Impacto no SE:</strong> Nenhum direto — sem ameaça para SP<br>
+            <strong style="color:var(--wb-text);">Contexto:</strong> Contraste máximo Brasil Norte (>35°C) vs SP (~10°C) na MAP-2
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Timeline de impacto -->
+    <div style="margin-top:14px;padding:12px 14px;background:rgba(0,0,0,0.2);border-radius:8px;border:1px solid var(--wb-border);">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--wb-dim);margin-bottom:10px;">📅 Timeline de Impacto — São Paulo / Região Sudeste</div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">
+        <div style="text-align:center;padding:8px 4px;background:rgba(255,255,255,.04);border-radius:6px;border:1px solid var(--wb-border);">
+          <div style="font-size:9px;color:var(--wb-dim);">22–24/mai</div>
+          <div style="font-size:10px;font-weight:700;color:#50d890;margin:3px 0;">✓ Estável</div>
+          <div style="font-size:9px;color:var(--wb-muted);">21–22°C · poucas nuvens</div>
+        </div>
+        <div style="text-align:center;padding:8px 4px;background:rgba(255,255,255,.04);border-radius:6px;border:1px solid var(--wb-border);">
+          <div style="font-size:9px;color:var(--wb-dim);">25–26/mai</div>
+          <div style="font-size:10px;font-weight:700;color:#f0c060;margin:3px 0;">⚡ Atenção</div>
+          <div style="font-size:9px;color:var(--wb-muted);">FF3 se aproxima · chuva isolada</div>
+        </div>
+        <div style="text-align:center;padding:8px 4px;background:rgba(248,112,96,.12);border-radius:6px;border:1px solid rgba(248,112,96,.35);">
+          <div style="font-size:9px;color:var(--wb-dim);">27/mai</div>
+          <div style="font-size:10px;font-weight:700;color:#f87060;margin:3px 0;">🌧️ Chuva</div>
+          <div style="font-size:9px;color:var(--wb-muted);">FF3 cruza SP · 8–14mm</div>
+        </div>
+        <div style="text-align:center;padding:8px 4px;background:rgba(96,184,248,.12);border-radius:6px;border:1px solid rgba(96,184,248,.4);">
+          <div style="font-size:9px;color:var(--wb-dim);">28–29/mai</div>
+          <div style="font-size:10px;font-weight:700;color:#60b8f8;margin:3px 0;">❄️ FRIO</div>
+          <div style="font-size:9px;color:var(--wb-muted);">MAP-2 entra · 10–15°C</div>
+        </div>
+        <div style="text-align:center;padding:8px 4px;background:rgba(96,184,248,.08);border-radius:6px;border:1px solid rgba(96,184,248,.25);">
+          <div style="font-size:9px;color:var(--wb-dim);">30–31/mai</div>
+          <div style="font-size:10px;font-weight:700;color:#88c8f8;margin:3px 0;">❄️ Frio</div>
+          <div style="font-size:9px;color:var(--wb-muted);">Ar polar persiste · 14–17°C</div>
+        </div>
+        <div style="text-align:center;padding:8px 4px;background:rgba(255,255,255,.04);border-radius:6px;border:1px solid var(--wb-border);">
+          <div style="font-size:9px;color:var(--wb-dim);">01–02/jun</div>
+          <div style="font-size:10px;font-weight:700;color:#f0c060;margin:3px 0;">↗ Recupera</div>
+          <div style="font-size:9px;color:var(--wb-muted);">Aquecimento gradual · 17–19°C</div>
+        </div>
+        <div style="text-align:center;padding:8px 4px;background:rgba(255,255,255,.04);border-radius:6px;border:1px solid var(--wb-border);">
+          <div style="font-size:9px;color:var(--wb-dim);">03–04/jun</div>
+          <div style="font-size:10px;font-weight:700;color:#50d890;margin:3px 0;">✓ Normal</div>
+          <div style="font-size:9px;color:var(--wb-muted);">18–20°C · estável</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end w-grid -->
+
+<!-- W FOOTER -->
+<div class="w-footer">
+  <div>
+    🔗 Fontes meteorológicas:
+    <a href="https://portal.inmet.gov.br" target="_blank">INMET</a> ·
+    <a href="https://www.smn.gob.ar" target="_blank">SMN Argentina</a> ·
+    <a href="https://www.meteochile.gob.cl" target="_blank">DMC Chile</a> ·
+    <a href="https://www.climatempo.com.br" target="_blank">Climatempo</a> ·
+    <a href="https://www.weather25.com" target="_blank">Weather25</a> ·
+    <a href="https://www.accuweather.com" target="_blank">AccuWeather</a>
+  </div>
+  <div>Dados baseados em médias históricas e previsões sazonais disponíveis até 22/05/2026</div>
+</div>
+
+</div><!-- end weather-section -->
+
+<!-- ══════════════════════ WEATHER FORECAST SCRIPT ══════════════════════ -->
+<script>
+(function(){
+  const days  = ['22/5','23/5','24/5','25/5','26/5','27/5','28/5','29/5','30/5','31/5','01/6','02/6','03/6','04/6'];
+  const wdays = ['Sex','Sáb','Dom','Seg','Ter','Qua','Qui','Sex','Sáb','Dom','Seg','Ter','Qua','Qui'];
+
+  function icon(rain, hi) {
+    if (rain >= 65) return '🌧️';
+    if (rain >= 40) return '🌦️';
+    if (rain >= 20) return '⛅';
+    if (hi <= 10)   return '❄️';
+    return '☀️';
+  }
+
+  function renderStrip(id, data) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const allHi = data.map(d=>d.hi), allLo = data.map(d=>d.lo);
+    const minT = Math.min(...allLo) - 2;
+    const maxT = Math.max(...allHi) + 2;
+    const range = maxT - minT;
+    el.innerHTML = data.map((d,i) => {
+      const hiPct = ((d.hi - minT) / range * 100).toFixed(0);
+      const loPct = ((d.lo - minT) / range * 100).toFixed(0);
+      const barW  = Math.max(1, hiPct - loPct);
+      const rainC = d.rain >= 60 ? '#60b8f8' : d.rain >= 35 ? '#88c8f8' : 'rgba(100,180,240,0.5)';
+      const mmC   = d.mm  >= 15  ? '#f87060' : d.mm >= 8 ? '#f0c060' : 'rgba(150,210,180,0.8)';
+      // highlight cold mass days (27-29/mai = index 5,6,7)
+      const isCold = (i>=5 && i<=7);
+      const border = isCold ? 'border:1px solid rgba(248,112,96,0.45);' : '';
+      return `<div class="w-fday" style="${border}">
+        <div class="w-fday-date">${wdays[i]}</div>
+        <div class="w-fday-date">${days[i]}</div>
+        <div class="w-fday-icon">${icon(d.rain, d.hi)}</div>
+        <div class="w-fday-hi">${d.hi}°</div>
+        <div class="w-temp-bar-wrap">
+          <div class="w-temp-bar" style="left:${loPct}%;width:${barW}%;background:linear-gradient(to right,#60b8f8,#f87060);"></div>
+        </div>
+        <div class="w-fday-lo">${d.lo}°</div>
+        <div class="w-fday-rain" style="color:${rainC};">💧${d.rain}%</div>
+        <div class="w-fday-rain" style="color:${mmC};font-size:8px;">🌊${d.mm}mm</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── São Paulo
+  const spData = [
+    {hi:21,lo:15,rain:20,mm:2}, {hi:20,lo:14,rain:15,mm:1}, {hi:19,lo:13,rain:25,mm:4},
+    {hi:21,lo:14,rain:30,mm:5}, {hi:22,lo:15,rain:20,mm:3}, {hi:19,lo:13,rain:45,mm:8},
+    {hi:17,lo:12,rain:60,mm:14},{hi:15,lo:10,rain:65,mm:16},{hi:15,lo:10,rain:50,mm:10},
+    {hi:17,lo:11,rain:35,mm:6}, {hi:19,lo:12,rain:25,mm:3}, {hi:20,lo:13,rain:20,mm:2},
+    {hi:19,lo:13,rain:15,mm:1}, {hi:18,lo:12,rain:20,mm:2}
+  ];
+
+  // ── Campinas
+  const camData = [
+    {hi:23,lo:15,rain:15,mm:2}, {hi:22,lo:14,rain:12,mm:1}, {hi:21,lo:14,rain:22,mm:3},
+    {hi:22,lo:15,rain:28,mm:4}, {hi:23,lo:15,rain:18,mm:2}, {hi:20,lo:13,rain:42,mm:8},
+    {hi:18,lo:12,rain:58,mm:13},{hi:16,lo:10,rain:62,mm:15},{hi:15,lo:9, rain:48,mm:9},
+    {hi:17,lo:11,rain:30,mm:4}, {hi:19,lo:12,rain:22,mm:2}, {hi:21,lo:13,rain:15,mm:1},
+    {hi:21,lo:14,rain:12,mm:1}, {hi:20,lo:13,rain:15,mm:2}
+  ];
+
+  // ── Indaiatuba
+  const indData = [
+    {hi:24,lo:16,rain:14,mm:2}, {hi:23,lo:15,rain:10,mm:1}, {hi:22,lo:14,rain:20,mm:3},
+    {hi:23,lo:15,rain:26,mm:4}, {hi:24,lo:16,rain:16,mm:2}, {hi:21,lo:14,rain:40,mm:7},
+    {hi:19,lo:12,rain:55,mm:12},{hi:17,lo:11,rain:60,mm:14},{hi:16,lo:10,rain:45,mm:8},
+    {hi:18,lo:12,rain:28,mm:3}, {hi:20,lo:13,rain:20,mm:2}, {hi:22,lo:14,rain:12,mm:1},
+    {hi:22,lo:15,rain:10,mm:1}, {hi:21,lo:13,rain:14,mm:2}
+  ];
+
+  // ── Rio de Janeiro
+  const rjData = [
+    {hi:26,lo:18,rain:25,mm:4}, {hi:25,lo:18,rain:20,mm:3}, {hi:24,lo:17,rain:30,mm:5},
+    {hi:25,lo:18,rain:25,mm:4}, {hi:26,lo:19,rain:20,mm:3}, {hi:24,lo:17,rain:35,mm:7},
+    {hi:22,lo:16,rain:50,mm:10},{hi:21,lo:16,rain:55,mm:12},{hi:22,lo:16,rain:40,mm:8},
+    {hi:24,lo:17,rain:25,mm:4}, {hi:25,lo:18,rain:20,mm:3}, {hi:26,lo:18,rain:15,mm:2},
+    {hi:26,lo:18,rain:15,mm:2}, {hi:25,lo:17,rain:20,mm:3}
+  ];
+
+  // ── Curitiba
+  const cwbData = [
+    {hi:18,lo:10,rain:30,mm:5}, {hi:17,lo:9, rain:35,mm:6}, {hi:16,lo:9, rain:40,mm:7},
+    {hi:17,lo:10,rain:35,mm:6}, {hi:18,lo:10,rain:25,mm:4}, {hi:15,lo:8, rain:55,mm:12},
+    {hi:13,lo:7, rain:65,mm:18},{hi:11,lo:5, rain:70,mm:20},{hi:12,lo:5, rain:55,mm:12},
+    {hi:14,lo:7, rain:40,mm:7}, {hi:15,lo:8, rain:30,mm:5}, {hi:16,lo:8, rain:25,mm:4},
+    {hi:15,lo:7, rain:30,mm:5}, {hi:14,lo:6, rain:35,mm:6}
+  ];
+
+  // ── Florianópolis
+  const flnData = [
+    {hi:21,lo:14,rain:28,mm:5}, {hi:20,lo:13,rain:30,mm:5}, {hi:19,lo:12,rain:35,mm:6},
+    {hi:20,lo:13,rain:30,mm:5}, {hi:21,lo:14,rain:22,mm:4}, {hi:18,lo:11,rain:50,mm:10},
+    {hi:16,lo:10,rain:62,mm:16},{hi:14,lo:9, rain:65,mm:18},{hi:15,lo:9, rain:50,mm:11},
+    {hi:17,lo:10,rain:35,mm:6}, {hi:18,lo:11,rain:28,mm:5}, {hi:19,lo:12,rain:22,mm:4},
+    {hi:18,lo:11,rain:25,mm:4}, {hi:17,lo:10,rain:30,mm:5}
+  ];
+
+  // ── Porto Alegre
+  const poaData = [
+    {hi:16,lo:10,rain:35,mm:6}, {hi:15,lo:9, rain:40,mm:7}, {hi:14,lo:8, rain:45,mm:8},
+    {hi:15,lo:9, rain:40,mm:7}, {hi:16,lo:10,rain:30,mm:5}, {hi:13,lo:7, rain:55,mm:12},
+    {hi:11,lo:6, rain:60,mm:16},{hi:10,lo:4, rain:65,mm:18},{hi:11,lo:4, rain:55,mm:13},
+    {hi:13,lo:6, rain:40,mm:7}, {hi:14,lo:7, rain:35,mm:6}, {hi:15,lo:8, rain:30,mm:5},
+    {hi:13,lo:6, rain:35,mm:6}, {hi:12,lo:5, rain:40,mm:7}
+  ];
+
+  // ── Buenos Aires
+  const bueData = [
+    {hi:17,lo:11,rain:30,mm:5}, {hi:16,lo:10,rain:25,mm:4}, {hi:15,lo:9, rain:35,mm:6},
+    {hi:14,lo:9, rain:40,mm:7}, {hi:15,lo:10,rain:25,mm:4}, {hi:14,lo:9, rain:45,mm:8},
+    {hi:12,lo:7, rain:55,mm:12},{hi:13,lo:7, rain:50,mm:10},{hi:14,lo:8, rain:35,mm:6},
+    {hi:15,lo:9, rain:25,mm:4}, {hi:16,lo:9, rain:20,mm:3}, {hi:15,lo:8, rain:30,mm:5},
+    {hi:14,lo:7, rain:35,mm:6}, {hi:13,lo:6, rain:40,mm:7}
+  ];
+
+  // ── Santiago
+  const sclData = [
+    {hi:18,lo:8, rain:40,mm:7}, {hi:17,lo:8, rain:45,mm:8}, {hi:16,lo:7, rain:50,mm:10},
+    {hi:15,lo:6, rain:55,mm:11},{hi:14,lo:6, rain:50,mm:10},{hi:13,lo:5, rain:60,mm:13},
+    {hi:12,lo:4, rain:65,mm:14},{hi:12,lo:4, rain:60,mm:12},{hi:13,lo:5, rain:50,mm:10},
+    {hi:15,lo:6, rain:45,mm:8}, {hi:16,lo:7, rain:40,mm:7}, {hi:15,lo:6, rain:45,mm:8},
+    {hi:14,lo:5, rain:55,mm:11},{hi:13,lo:4, rain:60,mm:12}
+  ];
+
+  renderStrip('sp-strip',  spData);
+  renderStrip('cam-strip', camData);
+  renderStrip('ind-strip', indData);
+  renderStrip('rj-strip',  rjData);
+  renderStrip('cwb-strip', cwbData);
+  renderStrip('fln-strip', flnData);
+  renderStrip('poa-strip', poaData);
+  renderStrip('bue-strip', bueData);
+  renderStrip('scl-strip', sclData);
+})();
+</script>
+
+<!-- ══════════════════════ SOLAR DISK CANVAS SCRIPT ══════════════════════ -->
+<script>
+(function() {
+  const canvas = document.getElementById('solarCanvas');
+  const ctx = canvas.getContext('2d');
+  const tooltip = document.getElementById('solarTooltip');
+
+  const W = canvas.width;
+  const H = canvas.height;
+  const cx = W / 2;      // center x
+  const cy = H / 2 + 10; // center y (slight offset for labels)
+  const R = Math.min(W, H) / 2 - 36; // solar disk radius
+
+  // Active regions: [id, label, hx, hy, color, glow, risk, config, flares, note]
+  // hx/hy: heliographic position normalized (-1 to 1), x=W(west=left), y=N(north=up)
+  // In canvas: canvasX = cx + hx*R,  canvasY = cy - hy*R  (flip Y for north-up)
+  const regions = [
+    {
+      id: 'AR4436', hx: -0.80, hy: 0.30,
+      color: '#eab308', glow: 'rgba(234,179,8,0.5)', size: 11,
+      risk: 'Atenção — saindo do disco', config: 'Beta',
+      flares: '2×C, 6×B (últimas 24h)', note: 'Rotacionando para o far-side NW'
+    },
+    {
+      id: 'AR4432', hx: 0.24, hy: -0.08,
+      color: '#22c55e', glow: 'rgba(34,197,94,0.4)', size: 8,
+      risk: 'Normal / Estável', config: 'Alpha',
+      flares: '1×B', note: 'Região simples, centro-leste do disco'
+    },
+    {
+      id: 'AR4433', hx: -0.30, hy: -0.38,
+      color: '#22c55e', glow: 'rgba(34,197,94,0.4)', size: 7,
+      risk: 'Normal / Estável', config: 'Alpha',
+      flares: 'Nenhum', note: 'SW do disco, região simples'
+    },
+    {
+      id: 'AR4434', hx: 0.34, hy: 0.42,
+      color: '#eab308', glow: 'rgba(234,179,8,0.4)', size: 9,
+      risk: 'Atenção — Beta', config: 'Beta',
+      flares: '1×B', note: 'NE do disco, configuração beta'
+    },
+    {
+      id: 'AR4435', hx: -0.44, hy: 0.05,
+      color: '#22c55e', glow: 'rgba(34,197,94,0.4)', size: 7,
+      risk: 'Normal / Estável', config: 'Alpha',
+      flares: 'Nenhum', note: 'Oeste-central, região simples'
+    },
+    // Far-side projected (ghost)
+    {
+      id: 'Far-side AR (projected)', hx: 0.88, hy: -0.15,
+      color: '#666', glow: 'rgba(150,150,150,0.3)', size: 14,
+      risk: '⚠️ Atenção — aproximando-se do limbo E', config: 'Desconhecida (far-side)',
+      flares: 'Não visível — projeção estimada', note: 'Regiões fiery do far-side rotacionando para o disco'
+    }
+  ];
+
+  // Coronal hole
+  const coronalHole = { hx: 0.10, hy: 0.55, rx: 0.14, ry: 0.09, label: 'CH1368' };
+
+  function drawDisk() {
+    ctx.clearRect(0, 0, W, H);
+
+    // ── Background subtle grid
+    ctx.save();
+    ctx.strokeStyle = 'rgba(30,58,95,0.25)';
+    ctx.lineWidth = 0.5;
+    for (let i = -4; i <= 4; i++) {
+      const x = cx + i * R / 4;
+      ctx.beginPath(); ctx.moveTo(x, cy - R - 10); ctx.lineTo(x, cy + R + 10); ctx.stroke();
+      const y = cy + i * R / 4;
+      ctx.beginPath(); ctx.moveTo(cx - R - 10, y); ctx.lineTo(cx + R + 10, y); ctx.stroke();
+    }
+    ctx.restore();
+
+    // ── Solar disk glow (outer corona)
+    const coronaGrad = ctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, R * 1.35);
+    coronaGrad.addColorStop(0, 'rgba(255,160,30,0.18)');
+    coronaGrad.addColorStop(0.5, 'rgba(255,100,10,0.07)');
+    coronaGrad.addColorStop(1, 'rgba(255,60,0,0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, R * 1.35, 0, Math.PI * 2);
+    ctx.fillStyle = coronaGrad;
+    ctx.fill();
+
+    // ── Solar disk body
+    const diskGrad = ctx.createRadialGradient(cx - R * 0.2, cy - R * 0.2, R * 0.05, cx, cy, R);
+    diskGrad.addColorStop(0,   '#fff5c0');
+    diskGrad.addColorStop(0.15,'#ffe070');
+    diskGrad.addColorStop(0.45,'#ff9a20');
+    diskGrad.addColorStop(0.72,'#e05000');
+    diskGrad.addColorStop(0.88,'#b03000');
+    diskGrad.addColorStop(1,   '#7a1500');
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fillStyle = diskGrad;
+    ctx.fill();
+
+    // ── Limb darkening overlay
+    const limbGrad = ctx.createRadialGradient(cx, cy, R * 0.6, cx, cy, R);
+    limbGrad.addColorStop(0, 'rgba(0,0,0,0)');
+    limbGrad.addColorStop(0.7, 'rgba(0,0,0,0.08)');
+    limbGrad.addColorStop(1,   'rgba(0,0,0,0.42)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fillStyle = limbGrad;
+    ctx.fill();
+
+    // ── Solar texture: faint granulation lines
+    ctx.save();
+    ctx.globalAlpha = 0.07;
+    ctx.strokeStyle = '#ff6600';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 18; i++) {
+      const angle = (i / 18) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R * (0.2 + Math.random() * 0.55), angle, angle + 0.5);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // ── Equator line
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy);
+    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // ── Disk border
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,180,60,0.5)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // ── Coronal hole
+    {
+      const chx = cx + coronalHole.hx * R;
+      const chy = cy - coronalHole.hy * R;
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(chx, chy, coronalHole.rx * R, coronalHole.ry * R, -0.3, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(56,189,248,0.22)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(56,189,248,0.7)';
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([3, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('CH1368', chx, chy + 3);
+      ctx.restore();
+    }
+
+    // ── Far-side limb shading (right side = E limb)
+    ctx.save();
+    const farGrad = ctx.createLinearGradient(cx + R * 0.6, cy, cx + R, cy);
+    farGrad.addColorStop(0, 'rgba(100,100,100,0)');
+    farGrad.addColorStop(1, 'rgba(30,30,30,0.35)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fillStyle = farGrad;
+    ctx.fill();
+    ctx.restore();
+
+    // ── Active regions
+    regions.forEach((r) => {
+      const px = cx + r.hx * R;
+      const py = cy - r.hy * R;
+      const isFarside = r.id.includes('Far-side');
+
+      // Glow
+      const grd = ctx.createRadialGradient(px, py, 1, px, py, r.size * 2.5);
+      grd.addColorStop(0, r.glow);
+      grd.addColorStop(1, 'transparent');
+      ctx.beginPath();
+      ctx.arc(px, py, r.size * 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = grd;
+      ctx.fill();
+
+      // Circle
+      ctx.beginPath();
+      ctx.arc(px, py, r.size, 0, Math.PI * 2);
+      if (isFarside) {
+        ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = r.color;
+        ctx.lineWidth = 2;
+        ctx.fillStyle = 'rgba(80,80,80,0.4)';
+        ctx.fill();
+        ctx.stroke();
+        ctx.setLineDash([]);
+      } else {
+        ctx.fillStyle = r.color;
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      // Label
+      ctx.font = 'bold 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = isFarside ? '#aaa' : '#fff';
+      ctx.shadowColor = '#000';
+      ctx.shadowBlur = 4;
+      const shortId = isFarside ? 'Far-S' : r.id.replace('AR', 'AR\n');
+      ctx.fillText(r.id, px, py + r.size + 12);
+      ctx.shadowBlur = 0;
+    });
+
+    // ── Compass labels
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(200,220,255,0.55)';
+    ctx.fillText('N', cx, cy - R - 12);
+    ctx.fillText('S', cx, cy + R + 20);
+    ctx.textAlign = 'right';
+    ctx.fillText('W', cx - R - 8, cy + 4);
+    ctx.textAlign = 'left';
+    ctx.fillText('E', cx + R + 8, cy + 4);
+
+    // ── "Far-side" label on E limb
+    ctx.save();
+    ctx.font = 'italic 9px sans-serif';
+    ctx.fillStyle = 'rgba(150,150,150,0.6)';
+    ctx.textAlign = 'right';
+    ctx.fillText('← Far-side', cx + R - 4, cy + R - 8);
+    ctx.restore();
+
+    // ── Title inside
+    ctx.save();
+    ctx.font = '9px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.textAlign = 'center';
+    ctx.fillText('22 MAI 2026 · SDO/NOAA', cx, cy + R + 28);
+    ctx.restore();
+  }
+
+  drawDisk();
+
+  // ── Hover / Tooltip
+  function getHit(mx, my) {
+    for (let i = regions.length - 1; i >= 0; i--) {
+      const r = regions[i];
+      const px = cx + r.hx * R;
+      const py = cy - r.hy * R;
+      const hit = r.size + 8;
+      const dx = mx - px, dy = my - py;
+      if (dx * dx + dy * dy < hit * hit) return r;
+    }
+    // Coronal hole
+    const chx = cx + coronalHole.hx * R;
+    const chy = cy - coronalHole.hy * R;
+    const dx = mx - chx, dy = my - chy;
+    if (Math.abs(dx) < coronalHole.rx * R + 10 && Math.abs(dy) < coronalHole.ry * R + 10) {
+      return {
+        id: 'CH1368 — Buraco Coronal', color: '#38bdf8',
+        risk: 'Fonte de vento solar rápido', config: 'Coronal Hole',
+        flares: 'N/A', note: 'Gerando vento solar ~490 km/s · CH ativo'
+      };
+    }
+    return null;
+  }
+
+  canvas.addEventListener('mousemove', function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const mx = (e.clientX - rect.left) * scaleX;
+    const my = (e.clientY - rect.top) * scaleY;
+    const hit = getHit(mx, my);
+    if (hit) {
+      canvas.style.cursor = 'pointer';
+      tooltip.style.display = 'block';
+      tooltip.style.left = (e.clientX + 16) + 'px';
+      tooltip.style.top  = (e.clientY - 10) + 'px';
+      tooltip.innerHTML =
+        '<div class="tooltip-title">' + hit.id + '</div>' +
+        '<div class="tooltip-row"><span class="tooltip-label">Risco</span><span class="tooltip-val">' + hit.risk + '</span></div>' +
+        '<div class="tooltip-row"><span class="tooltip-label">Configuração</span><span class="tooltip-val">' + hit.config + '</span></div>' +
+        '<div class="tooltip-row"><span class="tooltip-label">Flares 24h</span><span class="tooltip-val">' + hit.flares + '</span></div>' +
+        '<div class="tooltip-row"><span class="tooltip-label">Nota</span><span class="tooltip-val">' + hit.note + '</span></div>';
+    } else {
+      canvas.style.cursor = 'crosshair';
+      tooltip.style.display = 'none';
+    }
+  });
+
+  canvas.addEventListener('mouseleave', function() {
+    tooltip.style.display = 'none';
+  });
+
+  // Prevent tooltip from going off screen
+  window.addEventListener('mousemove', function(e) {
+    if (tooltip.style.display === 'block') {
+      const tw = tooltip.offsetWidth;
+      const th = tooltip.offsetHeight;
+      let lx = e.clientX + 16;
+      let ly = e.clientY - 10;
+      if (lx + tw > window.innerWidth - 10) lx = e.clientX - tw - 12;
+      if (ly + th > window.innerHeight - 10) ly = e.clientY - th - 12;
+      tooltip.style.left = lx + 'px';
+      tooltip.style.top  = ly + 'px';
+    }
+  });
+
+})();
+</script>
+
+</body>
+</html>
