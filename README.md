@@ -39,3 +39,4 @@ Relatório gerado e publicado automaticamente via tarefa agendada no Claude Cowo
 
 ---
 *Gerado por Mario Elisei · Sistema de Vigilância Solar Contínua*
+----
