@@ -37,6 +37,6 @@ Dashboard HTML gerado automaticamente com dados de atividade solar em tempo real
 
 Relatório gerado e publicado automaticamente via tarefa agendada no Claude Cowork.
 
----
+------
 *Gerado por Mario Elisei · Sistema de Vigilância Solar Contínua*
-----
+------
